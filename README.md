@@ -11,7 +11,7 @@ GoProject helps students track project steps, deadlines, and expenses while offe
 - Send reminders for deadlines
 - Support collaboration among learners
 
-# Tech Stack
+# Tech Stack:
 **Frontend:** React.js / Vue.js / Angular  
 **Backend:** Django REST Framework  
 **Database:** MongoDB  
