@@ -1,16 +1,20 @@
-import { useState } from 'react'
-import { Routes, Route, Link ,NavLink } from "react-router-dom";
+import { Routes, Route, Link, NavLink } from "react-router-dom";
+import Home from "./Pages/Home.jsx";
+import About from "./Pages/About.jsx";
 
-
-function App() {
-
+export default function App() {
   return (
-    <>
-  <div>
-    
-  </div>
-    </>
-  )
-}
+	<div>
+  	<nav>
+    	<NavLink to="/" end>Home</NavLink>
+    	{" | "}
+    	<NavLink to="/about">About</NavLink>
+  	</nav>
 
-export default App
+  	<Routes>
+    	<Route path="/" element={<Home title="Welcome!" />} />
+    	<Route path="/about" element={<About />} />
+  	</Routes>
+	</div>
+  );
+}
