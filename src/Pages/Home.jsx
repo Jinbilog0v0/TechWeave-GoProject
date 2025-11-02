@@ -12,6 +12,14 @@ export default function Home() {
     <div>
       <HomeCalendar />
     </div>
+
+    <div>
+      {/* Expense Tracker */}
+    </div>
+
+    <div>
+      {/* Status */}
+    </div>
   </main>
 
   </div>
