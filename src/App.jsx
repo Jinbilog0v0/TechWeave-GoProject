@@ -21,16 +21,17 @@ export default function App(){
 
 			<Routes>
 				<Route path="/" element={<LandingPage />} />
-				<Route path="/home" element={<Home />} />
-				<Route path="/about" element={<About />} />				
-				<Route path="/addproject" element={<AddProject />} />
-				<Route path="/login" element={<Login />} />
-				<Route path="/forgot-password" element={<ForgotPassword />} />
+
 				<Route path="/register" element={<Registration />} />
-				<Route path="/personal" element={<PersonalWorkspace />} />					
-				<Route path="/collaborative" element={<CollaborativeWorkspace />} />							
-				<Route path="/expense" element={<ExpenseTrack />} />							
-					<Route path="/settings" element={<Settings />} />
+				<Route path="/login" element={<Login />} />	
+				<Route path="/forgot-password" element={<ForgotPassword />} />
+				<Route path="/home" element={<Home />} />					
+				<Route path="/personalworkspace" element={<PersonalWorkspace />} />
+				<Route path="/collaborativeworkspace" element={<CollaborativeWorkspace />} />
+				<Route path="/expensetrack" element={<ExpenseTrack />} />
+				<Route path="/addproject" element={<AddProject />} />
+				<Route path="/about" element={<About />} />
+				<Route path="/settings" element={<Settings />} />
 			</Routes>
 
 		</div>
