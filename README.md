@@ -36,7 +36,7 @@ GoProject helps students track project steps, deadlines, and expenses while offe
 **Languages:** Python, JavaScript / TypeScript
 211f8be5895d5e0b0976b9d7dbbddbd09e6a12bb
 
- #React + Vite
+ # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
