@@ -62,20 +62,45 @@ const Settings = () => {
             </div>
             <div className="space-y-3">
               {Object.entries(settings.notifications).map(([key, value]) => (
-                <label key={key} className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        notifications: { ...settings.notifications, [key]: e.target.checked },
-                      })
-                    }
-                    className="w-5 h-5 text-green-700 rounded focus:ring-green-500"
+                // <label key={key} className="flex items-center space-x-3">
+                //   <input
+                //     type="checkbox"
+                //     checked={value}
+                //     onChange={(e) =>
+                //       setSettings({
+                //         ...settings,
+                //         notifications: { ...settings.notifications, [key]: e.target.checked },
+                //       })
+                //     }
+                //     className="w-5 h-5 text-green-700 rounded focus:ring-green-500"
+                //   />
+                //   <span>{key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}</span>
+                // </label>
+                <label key={key} className="flex items-center justify-between py-2">
+                <span>
+                  {key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}
+                </span>
+                <button
+                  onClick={() =>
+                    setSettings({
+                      ...settings,
+                      notifications: {
+                        ...settings.notifications,
+                        [key]: !settings.notifications[key],
+                      },
+                    })
+                  }
+                  className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${
+                    settings.notifications[key] ? "bg-green-600" : "bg-gray-300"
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                      settings.notifications[key] ? "translate-x-6" : ""
+                    }`}
                   />
-                  <span>{key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}</span>
-                </label>
+                </button>
+              </label>
               ))}
             </div>
           </div>

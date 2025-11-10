@@ -110,7 +110,7 @@ const Login = () => {
       <div className="bg-white rounded-lg shadow-lg p-8 w-96">
         <div className="flex items-center justify-center mb-8">
           <div className="w-20 h-20 rounded-full flex items-center justify-center">
-            <img src="/Images/TemporaryLogo-removebg.png" alt="Logo" className="w-21 h-21" />
+            <img src="/Images/TemporaryLogo-removebg.png" alt="GoProject Logo" className="w-21 h-21" />
           </div>
         </div>
         <h1 className="text-2xl font-bold text-center mb-2">GoProject</h1>
