@@ -23,7 +23,7 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      <Sidebar user={{ name: "Guest" }} /> {/* Dummy user for Sidebar */}
+      <Sidebar user={{ name: "NJ" }} /> 
 
       <div className="flex-1 p-8 ml-64 overflow-auto">
         <div className="max-w-7xl mx-auto">

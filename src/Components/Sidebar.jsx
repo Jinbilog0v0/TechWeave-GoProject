@@ -16,7 +16,7 @@ const Sidebar = ({ user = {}, onLogout }) => {
 
   const handleLogout = () => {
     if (onLogout) onLogout();
-    navigate('/'); // Go back to landing page
+    navigate('/');
   };
 
   return (
