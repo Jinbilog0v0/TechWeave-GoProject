@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Sidebar from "../Components/Sidebar";
 import { Save, User, Bell, Shield, Palette } from "lucide-react";
 
-const Settings = ({ user: propUser, onLogout }) => {
-  const [user, setUser] = useState(propUser || null); // store user state locally
+const Settings = () => {
   const [settings, setSettings] = useState({
     displayName: "",
     email: "",
@@ -17,32 +16,14 @@ const Settings = ({ user: propUser, onLogout }) => {
     language: "en",
   });
 
-  // Initialize user from props or localStorage
-  useEffect(() => {
-    const storedUser = propUser || JSON.parse(localStorage.getItem("user"));
-    if (storedUser) {
-      setUser(storedUser);
-      setSettings(prev => ({
-        ...prev,
-        displayName: storedUser.name || "",
-        email: storedUser.email || "",
-      }));
-    }
-  }, [propUser]);
-
   const handleSave = () => {
     alert("Settings saved successfully!");
-    // Optionally update localStorage or call your API
-    const updatedUser = { ...user, name: settings.displayName, email: settings.email };
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    setUser(updatedUser);
+    localStorage.setItem("settings", JSON.stringify(settings));
   };
-
-  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      <Sidebar user={user} onLogout={onLogout} />
+      <Sidebar user={{ name: "Guest" }} /> {/* Dummy user for Sidebar */}
 
       <div className="flex-1 p-8 ml-64 overflow-auto">
         <div className="max-w-7xl mx-auto">
@@ -59,14 +40,14 @@ const Settings = ({ user: propUser, onLogout }) => {
               <input
                 type="text"
                 value={settings.displayName}
-                onChange={e => setSettings({ ...settings, displayName: e.target.value })}
+                onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
                 placeholder="Display Name"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
               />
               <input
                 type="email"
                 value={settings.email}
-                onChange={e => setSettings({ ...settings, email: e.target.value })}
+                onChange={(e) => setSettings({ ...settings, email: e.target.value })}
                 placeholder="Email"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
               />
@@ -85,7 +66,7 @@ const Settings = ({ user: propUser, onLogout }) => {
                   <input
                     type="checkbox"
                     checked={value}
-                    onChange={e =>
+                    onChange={(e) =>
                       setSettings({
                         ...settings,
                         notifications: { ...settings.notifications, [key]: e.target.checked },
@@ -107,7 +88,7 @@ const Settings = ({ user: propUser, onLogout }) => {
             </div>
             <select
               value={settings.theme}
-              onChange={e => setSettings({ ...settings, theme: e.target.value })}
+              onChange={(e) => setSettings({ ...settings, theme: e.target.value })}
               className="w-full px-4 py-2 mb-4 border rounded-lg focus:ring-2 focus:ring-green-500"
             >
               <option value="light">Light</option>
@@ -116,7 +97,7 @@ const Settings = ({ user: propUser, onLogout }) => {
             </select>
             <select
               value={settings.language}
-              onChange={e => setSettings({ ...settings, language: e.target.value })}
+              onChange={(e) => setSettings({ ...settings, language: e.target.value })}
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
             >
               <option value="en">English</option>
@@ -136,6 +117,7 @@ const Settings = ({ user: propUser, onLogout }) => {
             </button>
           </div>
 
+          {/* Save button */}
           <button
             onClick={handleSave}
             className="flex items-center space-x-2 px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
