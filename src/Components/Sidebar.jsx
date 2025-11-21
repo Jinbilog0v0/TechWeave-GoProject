@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Users, Edit3, Settings as SettingsIcon, LogOut, Info, Menu, X } from 'lucide-react'; 
+import { Home, Users, Edit3, Settings as SettingsIcon, LogOut, Info, Menu, X, BarChart, BarChart2Icon } from 'lucide-react'; 
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ user = {}, onLogout }) => {
@@ -12,6 +12,7 @@ const Sidebar = ({ user = {}, onLogout }) => {
     { id: 'personal', label: 'Personal Workspace', icon: Users, path: '/personalworkspace' },
     { id: 'collaborative', label: 'Collaborative Workspace', icon: Users, path: '/collaborativeworkspace' },
     { id: 'expenses', label: 'Expense Tracker', icon: Edit3, path: '/expensetrack' },
+    { id: 'analytics', label: 'Analytics', icon: BarChart2Icon, path: '/analytics' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, path: '/settings' },
     { id: 'about', label: 'About', icon: Info, path: '/about' }
   ];

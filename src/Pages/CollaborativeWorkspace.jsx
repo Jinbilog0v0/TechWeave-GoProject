@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../Components/Sidebar';
 import ProjectCard from '../Components/ProjectCard';
-import { Plus, X, Users } from 'lucide-react';
+import { Plus, X, Users, UploadCloud, Trash2, Download } from 'lucide-react';
+import Analytics from './Analytics';
+
 
 const CollaborativeWorkspace = ({ user, onLogout }) => {
   const [projects, setProjects] = useState([
@@ -12,24 +14,20 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
       status: 'In Progress',
       progress: 55,
       dueDate: '2025-01-20',
-      teamSize: 3,
       members: ['Alice', 'Bob', 'Charlie'],
-    },
-    {
-      id: 2,
-      name: 'Company Website Redesign',
-      description: 'Modern redesign of company website with new branding',
-      status: 'Completed',
-      progress: 100,
-      dueDate: '2025-02-15',
-      teamSize: 2,
-      members: ['David', 'Eva'],
+      subtasks: [
+        { id: 101, name: 'Backend API', members: ['Alice'], files: [], progress: 0 },
+        { id: 102, name: 'Frontend UI', members: ['Bob', 'Charlie'], files: [], progress: 0 },
+      ],
     },
   ]);
 
   const [showForm, setShowForm] = useState(false);
   const [showMembers, setShowMembers] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
+  const [viewingProject, setViewingProject] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -37,15 +35,22 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
     status: 'Pending',
     teamMembers: '',
     progress: 0,
+    subtasks: [],
   });
+
+  const nextId = () => Date.now() + Math.floor(Math.random() * 1000);
 
   const openForm = (project = null) => {
     if (project) {
       setEditingProject(project);
       setFormData({
-        ...project,
-        teamMembers: project.members ? project.members.join(', ') : '',
+        name: project.name || '',
+        description: project.description || '',
+        dueDate: project.dueDate || '',
+        status: project.status || 'Pending',
         progress: project.progress || 0,
+        teamMembers: project.members ? project.members.join(', ') : '',
+        subtasks: project.subtasks ? project.subtasks.map((st) => ({ ...st })) : [],
       });
     } else {
       setEditingProject(null);
@@ -56,6 +61,7 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
         status: 'Pending',
         teamMembers: '',
         progress: 0,
+        subtasks: [],
       });
     }
     setShowForm(true);
@@ -68,19 +74,27 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.name || !formData.dueDate) return alert('Project name and due date required.');
+
     const members = formData.teamMembers
       ? formData.teamMembers.split(',').map((m) => m.trim())
       : [];
 
     const projectData = {
-      id: editingProject ? editingProject.id : Date.now(),
+      id: editingProject ? editingProject.id : nextId(),
       name: formData.name,
       description: formData.description,
       dueDate: formData.dueDate,
       status: formData.status,
       members,
-      teamSize: members.length,
       progress: Number(formData.progress),
+      subtasks: formData.subtasks.map((st) => ({
+        id: st.id || nextId(),
+        name: st.name,
+        members: st.members || [],
+        files: st.files || [],
+        progress: st.progress || 0,
+      })),
     };
 
     if (editingProject) {
@@ -100,6 +114,7 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
       status: 'Pending',
       teamMembers: '',
       progress: 0,
+      subtasks: [],
     });
   };
 
@@ -109,9 +124,95 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
     }
   };
 
+  const openViewModal = (project) => {
+    setViewingProject({ ...project, subtasks: project.subtasks.map((st) => ({ ...st })) });
+    setShowViewModal(true);
+  };
+
+  const closeViewModal = () => {
+    setViewingProject(null);
+    setShowViewModal(false);
+  };
+
+  const addSubtaskInView = () => {
+    setViewingProject((prev) => ({
+      ...prev,
+      subtasks: [...prev.subtasks, { id: nextId(), name: '', members: [], files: [], progress: 0 }],
+    }));
+  };
+
+  const updateSubtaskInView = (id, key, value) => {
+    setViewingProject((prev) => ({
+      ...prev,
+      subtasks: prev.subtasks.map((st) => (st.id === id ? { ...st, [key]: value } : st)),
+    }));
+  };
+
+  const removeSubtaskInView = (id) => {
+    setViewingProject((prev) => ({
+      ...prev,
+      subtasks: prev.subtasks.filter((st) => st.id !== id),
+    }));
+  };
+
+  const handleFileUploadInView = (subtaskId, files) => {
+    const filesArr = Array.from(files).map((f) => ({
+      id: nextId(),
+      file: f,
+      name: f.name,
+      size: f.size,
+      type: f.type,
+      url: URL.createObjectURL(f),
+    }));
+
+    updateSubtaskInView(subtaskId, 'files', [
+      ...(viewingProject.subtasks.find((st) => st.id === subtaskId)?.files || []),
+      ...filesArr,
+    ]);
+  };
+
+  const removeFileInView = (subtaskId, fileId) => {
+    const subtask = viewingProject.subtasks.find((st) => st.id === subtaskId);
+    const file = subtask.files.find((f) => f.id === fileId);
+    if (file?.url) URL.revokeObjectURL(file.url);
+    updateSubtaskInView(
+      subtaskId,
+      'files',
+      subtask.files.filter((f) => f.id !== fileId)
+    );
+  };
+
+  const saveViewChanges = () => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === viewingProject.id ? { ...viewingProject } : p))
+    );
+    closeViewModal();
+  };
+
+  const calculateProgress = (subtasks) => {
+    if (!subtasks || subtasks.length === 0) return 0;
+    const completed = subtasks.filter((st) => st.files.length > 0).length;
+    return Math.round((completed / subtasks.length) * 100);
+  };
+
+  useEffect(() => {
+    return () => {
+      projects.forEach((p) =>
+        p.subtasks?.forEach((st) =>
+          st.files?.forEach((f) => f.url && URL.revokeObjectURL(f.url))
+        )
+      );
+      if (viewingProject)
+        viewingProject.subtasks?.forEach((st) =>
+          st.files?.forEach((f) => f.url && URL.revokeObjectURL(f.url))
+        );
+    };
+  }, [projects, viewingProject]);
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       <Sidebar user={user} onLogout={onLogout} />
+
       <div className="flex-1 p-8 ml-64 overflow-auto">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -132,14 +233,13 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
           {/* Add/Edit Project Modal */}
           {showForm && (
             <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-              <div className="bg-white rounded-xl shadow-xl p-6 w-96 relative">
+              <div className="bg-white rounded-xl shadow-xl p-6 w-96 relative max-h-[90vh] overflow-auto">
                 <button
                   onClick={() => setShowForm(false)}
                   className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
                 >
                   <X size={20} />
                 </button>
-
                 <h3 className="text-xl font-bold text-gray-800 mb-4">
                   {editingProject ? 'Edit Team Project' : 'Add New Team Project'}
                 </h3>
@@ -175,8 +275,6 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
                     onChange={handleInputChange}
                     className="w-full p-2 border rounded"
                   />
-
-                  {/* Collapsible Progress Slider */}
                   {formData.status === 'In Progress' && (
                     <div className="mt-2">
                       <label className="block mb-1 font-semibold text-gray-700">
@@ -193,7 +291,6 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
                       />
                     </div>
                   )}
-
                   <select
                     name="status"
                     value={formData.status}
@@ -204,6 +301,61 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
                     <option value="In Progress">In Progress</option>
                     <option value="Completed">Completed</option>
                   </select>
+
+                  {/* Subtasks */}
+                  <div className="border-t pt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">Subtasks</h4>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            subtasks: [...prev.subtasks, { id: nextId(), name: '', members: [] }],
+                          }))
+                        }
+                        className="inline-flex items-center px-3 py-1 bg-gray-100 rounded"
+                      >
+                        <Plus size={14} /> <span className="ml-2 text-sm">Add Subtask</span>
+                      </button>
+                    </div>
+
+                    {formData.subtasks.map((st, idx) => (
+                      <div key={st.id} className="mb-2 space-y-1">
+                        <input
+                          type="text"
+                          placeholder="Subtask title"
+                          value={st.name}
+                          onChange={(e) => {
+                            const updated = [...formData.subtasks];
+                            updated[idx].name = e.target.value;
+                            setFormData({ ...formData, subtasks: updated });
+                          }}
+                          className="w-full p-2 border rounded"
+                        />
+                        <select
+                          multiple
+                          value={st.members}
+                          onChange={(e) => {
+                            const options = Array.from(e.target.selectedOptions).map(
+                              (opt) => opt.value
+                            );
+                            const updated = [...formData.subtasks];
+                            updated[idx].members = options;
+                            setFormData({ ...formData, subtasks: updated });
+                          }}
+                          className="w-full p-2 border rounded"
+                        >
+                          {formData.teamMembers.split(',').map((m) => (
+                            <option key={m.trim()} value={m.trim()}>
+                              {m.trim()}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+
                   <button
                     type="submit"
                     className="w-full bg-green-700 text-white py-2 rounded hover:bg-green-800 transition"
@@ -246,12 +398,165 @@ const CollaborativeWorkspace = ({ user, onLogout }) => {
                 key={project.id}
                 project={project}
                 onEdit={() => openForm(project)}
-                onDelete={handleDelete}
+                onDelete={() => handleDelete(project.id)}
                 onViewMembers={() => setShowMembers(project)}
                 collaborative
+                subtasks={project.subtasks}
+                user={user}
+                onClick={() => openViewModal(project)}
               />
             ))}
           </div>
+
+          {/* View Project Modal */}
+          {showViewModal && viewingProject && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl shadow-xl p-6 w-11/12 md:w-3/4 lg:w-1/2 relative max-h-[90vh] overflow-auto">
+                <button
+                  onClick={closeViewModal}
+                  className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+                >
+                  <X size={20} />
+                </button>
+
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">{viewingProject.name}</h3>
+                    <p className="text-sm text-gray-600">{viewingProject.description}</p>
+                    <div className="text-xs text-gray-500 mt-1">Due: {viewingProject.dueDate}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium">{viewingProject.status}</div>
+                    <div className="text-2xl font-bold">
+                      {calculateProgress(viewingProject.subtasks)}%
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full bg-gray-200 rounded-full h-3 mt-4">
+                  <div
+                    className="h-3 rounded-full bg-green-600"
+                    style={{ width: `${calculateProgress(viewingProject.subtasks)}%` }}
+                  />
+                </div>
+
+                {/* Subtasks */}
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">Subtasks</h4>
+                    <button
+                      type="button"
+                      onClick={addSubtaskInView}
+                      className="inline-flex items-center px-3 py-1 bg-gray-100 rounded"
+                    >
+                      <Plus size={14} /> <span className="ml-2 text-sm">Add Subtask</span>
+                    </button>
+                  </div>
+
+                  {viewingProject.subtasks.map((st) => (
+                    <div key={st.id} className="p-3 border rounded">
+                      <div className="flex justify-between items-center">
+                        <input
+                          type="text"
+                          value={st.name}
+                          onChange={(e) => updateSubtaskInView(st.id, 'name', e.target.value)}
+                          placeholder="Subtask title"
+                          className="flex-1 p-1 border rounded mr-3"
+                        />
+                        <div className="text-sm text-gray-500">
+                          {(st.files?.length || 0) > 0 ? 'Submitted' : 'Pending'}
+                        </div>
+                        <button
+                          onClick={() => removeSubtaskInView(st.id)}
+                          className="ml-3 text-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      {/* Assigned Members Display */}
+                      <div className="flex flex-wrap mt-2 gap-1">
+                        {st.members.length > 0 ? (
+                          st.members.map((m) => (
+                            <span
+                              key={m}
+                              className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                            >
+                              {m}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-xs">No members assigned</span>
+                        )}
+                      </div>
+
+                      {/* Select Members */}
+                      <select
+                        multiple
+                        value={st.members}
+                        onChange={(e) =>
+                          updateSubtaskInView(
+                            st.id,
+                            'members',
+                            Array.from(e.target.selectedOptions).map((opt) => opt.value)
+                          )
+                        }
+                        className="w-full mt-2 p-2 border rounded"
+                      >
+                        {viewingProject.members.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Upload Files */}
+                      <div className="mt-3 flex items-center space-x-2">
+                        <label className="inline-flex items-center px-3 py-2 border rounded cursor-pointer hover:bg-gray-50">
+                          <UploadCloud size={16} className="mr-2" />
+                          <span className="text-sm">Upload</span>
+                          <input
+                            type="file"
+                            multiple
+                            onChange={(e) => handleFileUploadInView(st.id, e.target.files)}
+                            className="hidden"
+                          />
+                        </label>
+                        {st.files?.map((f) => (
+                          <div
+                            key={f.id}
+                            className="flex items-center space-x-1 bg-gray-100 px-2 py-1 rounded"
+                          >
+                            <a
+                              href={f.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs truncate max-w-[80px]"
+                            >
+                              {f.name}
+                            </a>
+                            <button
+                              onClick={() => removeFileInView(st.id, f.id)}
+                              className="text-red-500"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={saveViewChanges}
+                  className="mt-4 w-full bg-green-700 text-white py-2 rounded hover:bg-green-800 transition"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
