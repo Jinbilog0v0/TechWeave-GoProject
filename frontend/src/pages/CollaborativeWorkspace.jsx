@@ -7,19 +7,21 @@ import {
 } from "@/components/ui/alert"
 import { CheckCircle2Icon } from "lucide-react";
 import AddCollaborativeProjectDialog from "../components/AddCollaborativeProjectDialog";
-import ProjectMembersDialog from "../components/ProjectMemberDialog";
+import ProjectMemberDialog from "../components/ProjectMemberDialog";
 import api from "../api";
+import { Button } from "@/components/ui/button"; // Make sure Button is imported
 
 const CollaborativeWorkspace = () => {
   const [projects, setProjects] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
+  const [editingProject, setEditingProject] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [showAlert, setShowAlert] = useState(false);
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
 
-const handleViewMembers = async (projectId) => {
+  const handleViewMembers = async (projectId) => {
     setShowMembersDialog(true);
     setMembersLoading(true);
     setSelectedMembers([]);
@@ -34,7 +36,6 @@ const handleViewMembers = async (projectId) => {
       setMembersLoading(false);
     }
   };
-
 
   const fetchData = async () => {
     try {
@@ -52,6 +53,11 @@ const handleViewMembers = async (projectId) => {
     fetchData();
   }, []);
 
+  const openDialog = (project = null) => {
+    setEditingProject(project);
+    setShowDialog(true);
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
@@ -65,14 +71,22 @@ const handleViewMembers = async (projectId) => {
 
   const handleProjectSubmit = async (formData) => {
     try {
-      await api.post("/api/projects/", formData);
+      if (editingProject) {
+         // Update logic - just update details, members handled separately
+         await api.put(`/api/projects/${editingProject.id}/`, formData);
+      } else {
+         // Create logic - requires members
+         await api.post("/api/projects/", { ...formData, project_type: "Collaborative" });
+      }
+      
       setShowDialog(false);
+      setEditingProject(null); 
       fetchData();
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 4000);
     } catch (err) {
       console.error(err);
-      alert("Failed to add project");
+      alert("Failed to save project");
     }
   };
 
@@ -84,39 +98,45 @@ const handleViewMembers = async (projectId) => {
         >
           <CheckCircle2Icon className="text-green-700 w-6 h-6 shrink-0" />
           <AlertTitle className="text-green-800 font-medium">
-            New project successfully added!
+            {editingProject ? "Project updated successfully!" : "New project successfully added!"}
           </AlertTitle>
         </Alert>
       )}
 
-      {/* The Members Dialog */}
-       <ProjectMembersDialog 
+       <ProjectMemberDialog 
           open={showMembersDialog} 
           onOpenChange={setShowMembersDialog}
           members={selectedMembers}
           loading={membersLoading}
        />
 
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Collaborative Workspace</h2>
-        {/* Add Collaborative Project Dialog with Trigger Button */}
+        
+        {/* FIX: No triggerText here. The dialog is hidden until showDialog is true */}
         <AddCollaborativeProjectDialog
           open={showDialog}
           onOpenChange={setShowDialog}
           onSubmit={handleProjectSubmit}
-          triggerText="New Team Project"
+          initialData={editingProject} 
         />
+        
+        {/* This is the ONLY button that triggers the Create mode */}
+        <Button 
+            onClick={() => openDialog(null)}
+            className="flex items-center px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition"
+        >
+            New Team Project
+        </Button>
       </div>
 
-      {/* Projects List */}
       {loading ? (
         <p className="text-gray-500">Loading projects...</p>
       ) : projects.length === 0 ? (
         <EmptyProjects
           title="No Team Projects Yet"
           description="Create your first collaborative project to get started"
-          onCreate={() => setShowDialog(true)}
+          onCreate={() => openDialog(null)}
         />
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -126,6 +146,7 @@ const handleViewMembers = async (projectId) => {
               project={project}
               collaborative
               onViewMembers={() => handleViewMembers(project.id)}
+              onEdit={() => openDialog(project)} 
               onDelete={() => handleDelete(project.id)}
             />
           ))}

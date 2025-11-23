@@ -111,10 +111,40 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+  /* Enable smooth scrolling for the whole page */
+  html {
+    scroll-behavior: smooth;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  /* --- CUSTOM SCROLLBAR STYLING --- */
+  
+  /* Width of the scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  /* Track (background) */
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Handle (the moving part) */
+  ::-webkit-scrollbar-thumb {
+    /* Uses your Tailwind colors: Green-300 by default, Green-700 on hover */
+    @apply bg-green-300 hover:bg-green-700 transition-colors duration-300;
+    border-radius: 9999px; /* Fully rounded */
+    border: 3px solid transparent; /* Creates padding around the thumb */
+    background-clip: content-box;
+  }
+}
+
+/* Utility to hide scrollbar but allow scrolling (if needed elsewhere) */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; 
+    scrollbar-width: none; 
   }
 }

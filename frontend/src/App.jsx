@@ -14,6 +14,7 @@ import Layout from './pages/Layout.jsx'
 import Settings from './pages/Settings.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
+import ProjectDetailPage from './pages/ProjectDetailPage.jsx'
 
 function Logout() { 
   localStorage.clear();
@@ -71,9 +72,12 @@ function App() {
 
           <Route path="/settings" element={ <Settings /> } />
 
+          <Route path="/projects/:id" element={<ProjectDetailPage />} />
+          <Route path='/profile' element={<ProfilePage />}  />
+        
         </Route>
 
-        <Route path='/profile' element={<ProfilePage />}  />
+
 
       </Routes>
 

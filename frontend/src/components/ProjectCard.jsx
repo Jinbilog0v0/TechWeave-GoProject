@@ -1,88 +1,101 @@
 import React from 'react';
-import { Pencil, Trash, Users } from 'lucide-react';
+import { CalendarDays, Trash2, Edit2, Users } from 'lucide-react'; 
+import { useNavigate } from 'react-router-dom';
 
-const ProjectCard = ({ project, onEdit, onDelete, onViewMembers, collaborative }) => {
-  // Format date
-  const dueDate = project.end_date
-    ? new Date(project.end_date).toLocaleDateString()
-    : "No due date";
+const ProjectCard = ({ project, collaborative, onDelete, onViewMembers, onEdit }) => { 
+  
+  const navigate = useNavigate();
+
+  const getProgressColor = (progress) => {
+    if (progress >= 100) return "bg-green-500";
+    if (progress > 50) return "bg-blue-500";
+    return "bg-yellow-500";
+  };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-5 border-l-4 border-green-700 hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between">
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col h-full">
       
-      {/* Project Header */}
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-lg font-bold text-gray-800 truncate">{project.title}</h3>
-        {project.status && (
-          <span
-            className={`px-2 py-1 rounded text-xs font-medium ${
-              project.status === 'Complete'
-                ? 'bg-green-100 text-green-800'
-                : project.status === 'In Progress'
-                ? 'bg-yellow-100 text-yellow-700'
-                : 'bg-gray-200 text-gray-600'
-            }`}
-          >
-            {project.status}
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
+        <div 
+          onClick={() => navigate(`/projects/${project.id}`)} 
+          className="cursor-pointer group"
+        >
+          <span className={`text-xs font-semibold px-2 py-1 rounded-full 
+            ${project.priority === 'High' ? 'bg-red-100 text-red-700' : 
+              project.priority === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 
+              'bg-blue-100 text-blue-700'}`}>
+            {project.priority}
           </span>
-        )}
+          <h3 className="text-lg font-bold text-gray-800 mt-2 group-hover:text-green-700 transition-colors">
+            {project.title}
+          </h3>
+        </div>
       </div>
 
-      {/* Project Details */}
-      {project.description && (
-        <p className="text-sm text-gray-600 mb-2 line-clamp-2">{project.description}</p>
-      )}
-      
-      <div className="flex justify-between items-end mt-2">
-        <p className="text-xs text-gray-500">Due: {dueDate}</p>
-        
-        {/* Small Member Count Badge */}
-        {collaborative && (
-          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium">
-             Team Project
-          </span>
-        )}
-      </div>
+      <p className="text-gray-500 text-sm mb-6 line-clamp-2 flex-1">
+        {project.description || "No description provided."}
+      </p>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-        <div
-          className="bg-green-700 h-2 rounded-full transition-all duration-500"
-          style={{ width: `${project.progress || 0}%` }}
-        />
+      <div className="mb-4">
+        <div className="flex justify-between text-xs text-gray-500 mb-1">
+          <span>Progress</span>
+          <span>{project.progress}%</span>
+        </div>
+        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+          <div 
+            className={`h-full rounded-full transition-all duration-500 ${getProgressColor(project.progress)}`} 
+            style={{ width: `${project.progress}%` }}
+          />
+        </div>
       </div>
-      <p className="text-xs text-gray-600 mt-1 text-right">{project.progress || 0}% complete</p>
 
-      {/* Action Buttons */}
-      <div className="flex justify-end items-center space-x-3 mt-4 pt-3 border-t border-gray-100">
-        {/* Edit Button */}
-        <button
-          onClick={onEdit}
-          title="Edit Project"
-          className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50"
-        >
-          <Pencil size={18} />
-        </button>
+      {/* Footer Actions */}
+      <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
+        <div className="flex items-center text-gray-400 text-xs">
+          <CalendarDays className="w-4 h-4 mr-1" />
+          {project.end_date || "No deadline"}
+        </div>
 
-        {/* Delete Button */}
-        <button
-          onClick={onDelete}
-          title="Delete Project"
-          className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50"
-        >
-          <Trash size={18} />
-        </button>
+        <div className="flex gap-2">
+          {/* View Members Button */}
+          {collaborative && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewMembers(); 
+              }} 
+              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="View Members"
+            >
+              <Users className="w-4 h-4" />
+            </button>
+          )}
 
-        {/* View Members Button (Only shows if collaborative) */}
-        {collaborative && onViewMembers && (
-          <button
-            onClick={onViewMembers}
-            title="View Team Members"
-            className="text-green-700 hover:text-green-900 transition p-1 rounded hover:bg-green-50"
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+            title="Edit Project"
           >
-            <Users size={18} />
+            <Edit2 className="w-4 h-4" />
           </button>
-        )}
+
+          {/* Delete Button */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Delete Project"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

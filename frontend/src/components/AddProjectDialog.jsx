@@ -21,15 +21,14 @@ export function AddProjectDialog({
   open,
   onOpenChange,
 }) {
-
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     end_date: "",
-    status: "In Progress", 
+    status: "In Progress",
     priority: "Medium",
   });
-  
+
   const [loading, setLoading] = useState(false);
   const titleRef = useRef(null);
 
@@ -45,12 +44,12 @@ export function AddProjectDialog({
         priority: initialData.priority || "Medium",
       });
     } else {
-      setFormData({ 
-        title: "", 
-        description: "", 
+      setFormData({
+        title: "",
+        description: "",
         end_date: "",
-        status: "In Progress", 
-        priority: "Medium"
+        status: "In Progress",
+        priority: "Medium",
       });
     }
   }, [initialData, open]);
@@ -74,25 +73,33 @@ export function AddProjectDialog({
       try {
         setLoading(true);
 
-        await onSubmit({ ...formData, project_type: projectType });
+        // Fix: Convert empty date string to null to prevent backend errors
+        const payload = { ...formData };
+        if (!payload.end_date) payload.end_date = null;
+
+        await onSubmit({ ...payload, project_type: projectType });
         
+        // Optional: Clear form if not editing (Logic depends on your parent component behavior)
         if (!initialData) {
-            setFormData({ 
+             setFormData({ 
                 title: "", 
                 description: "", 
                 end_date: "", 
                 status: "In Progress", 
                 priority: "Medium" 
-            });
+             });
         }
-      } catch (err) {
-        console.error(err);
-        alert("Failed to save project");
+
+      } catch (error) {
+        console.error("Error submitting form:", error);
+        alert("Failed to save project.");
       } finally {
         setLoading(false);
       }
     }
   };
+
+  // Define standard shadcn/ui input styling for the select dropdown
   const inputClass = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
@@ -104,11 +111,13 @@ export function AddProjectDialog({
           <DialogHeader>
             <DialogTitle className={`text-green-700 flex items-center gap-2`}>
               <div className="flex items-center">
-                <img src="/Images/TemporaryLogo-removebg.png" className="w-8 h-8 inline-block mb-2" alt="Logo" />  
-              </div> 
-              <div>
-                 {initialData ? "Edit Project" : title}   
+                <img
+                  src="/Images/TemporaryLogo-removebg.png"
+                  className="w-8 h-8 inline-block mb-2"
+                  alt="Logo"
+                />
               </div>
+              <div>{initialData ? "Edit Project" : title}</div>
             </DialogTitle>
             <DialogDescription className="mt-1 mb-6 text-gray-600">
               Manage project details. Status will be set to <b>In Progress</b>.
@@ -144,20 +153,20 @@ export function AddProjectDialog({
             </div>
 
             <div className="flex justify-center items-center gap-2">
-              {/* Priority - We kept this, but removed Status */}
+              {/* Priority */}
               <div className="grid gap-3 w-full">
-                  <Label htmlFor="priority">Priority</Label>
-                  <select
-                      id="priority"
-                      name="priority"
-                      value={formData.priority}
-                      onChange={handleChange}
-                      className={inputClass}
-                  >
-                      <option value="Low">Low</option>
-                      <option value="Medium">Medium</option>
-                      <option value="High">High</option>
-                  </select>
+                <Label htmlFor="priority">Priority</Label>
+                <select
+                  id="priority"
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleChange}
+                  className={inputClass}
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
               </div>
 
               {/* Due Date */}
@@ -172,7 +181,6 @@ export function AddProjectDialog({
                 />
               </div>
             </div>
-
           </div>
 
           <DialogFooter className="mt-4 flex justify-end gap-2">
@@ -184,7 +192,11 @@ export function AddProjectDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" className={`bg-green-700 text-white`} disabled={loading}>
+            <Button
+              type="submit"
+              className={`bg-green-700 text-white`}
+              disabled={loading}
+            >
               {loading ? "Saving..." : initialData ? "Update" : "Create"}
             </Button>
           </DialogFooter>

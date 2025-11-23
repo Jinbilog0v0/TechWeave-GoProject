@@ -2,13 +2,15 @@ from django.contrib.auth.models import User
 from rest_framework import serializers  
 from .models import Project, Task, TeamMember, Comment, Attachment, ActivityLog, Notification, Expense, Profile
 
-class ProfileSerializer(serializers.ModelSerializer):
+# --- USER & PROFILE ---
+
+class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['role', 'course', 'bio', 'profile_picture']
+        fields = ['profile_picture', 'role', 'course', 'bio']
 
 class UserSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer(required=False) # Nested serializer
+    profile = UserProfileSerializer(required=False)
 
     class Meta: 
         model = User
@@ -16,67 +18,28 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}, 'email': {'required': True}}
 
     def create(self, validated_data):
-        # Separate profile data from user data
         profile_data = validated_data.pop('profile', {})
-        
-        # Create the user (Standard Django way)
         user = User.objects.create_user(**validated_data)
-        
-        # Update the automatically created profile with the extra data
-        if profile_data:
-            # We access user.profile safely thanks to the Signal
-            for attr, value in profile_data.items():
-                setattr(user.profile, attr, value)
-            user.profile.save()
-            
+        for attr, value in profile_data.items():
+            setattr(user.profile, attr, value)
+        user.profile.save()
         return user
 
 
 class ProjectSerializer(serializers.ModelSerializer):
-    owner = serializers.ReadOnlyField(source='owner.id')  
+    owner = serializers.ReadOnlyField(source='owner.username')
+    progress = serializers.SerializerMethodField() 
 
     class Meta:
         model = Project
-        fields = [
-            'id', 'title', 'description', 'owner', 'start_date',
-            'end_date', 'project_type', 'status', 'priority'
-        ]
- 
+        fields = '__all__'
 
-class ProjectSummarySerializer(serializers.ModelSerializer):
-    """
-    Lightweight summary used on dashboard lists.
-    """
-    class Meta:
-        model = Project
-        fields = [
-            "id",
-            "title",
-            "project_type",
-            "status",
-            "priority",
-            "start_date",
-            "end_date",
-        ]
-
-class ActivityLogHomeSerializer(serializers.ModelSerializer):
-
-    project_title = serializers.CharField(source="project.title", read_only=True)
-    user_name = serializers.CharField(source="user.username", read_only=True)
-    timestamp = serializers.DateTimeField(read_only=True)
-
-    class Meta:
-        model = ActivityLog
-        fields = ["id", "action", "timestamp", "project_title", "user_name"]
-
-
-class ExpenseSerializer(serializers.ModelSerializer):
-
-    project_title = serializers.CharField(source="project.title", read_only=True)
-
-    class Meta:
-        model = Expense
-        fields = ["id", "category", "amount", "description", "date", "project_title"]
+    def get_progress(self, obj):
+        total_tasks = obj.tasks.count()
+        if total_tasks == 0:
+            return 0
+        completed_tasks = obj.tasks.filter(status='Done').count()
+        return round((completed_tasks / total_tasks) * 100)
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
@@ -86,29 +49,45 @@ class TaskSerializer(serializers.ModelSerializer):
 class TeamMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamMember
+        fields = ['id', 'project', 'user', 'role', 'joined_at']
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response['user'] = UserSerializer(instance.user).data
+        return response
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Expense
         fields = '__all__'
 
-# --- DELETED THE DUPLICATE ExpenseSerializers CLASS HERE ---
+# --- EXTRAS ---
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = '__all__'  
+        fields = '__all__'
 
 class AttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attachment
-        fields = '__all__'  
+        fields = '__all__'
 
-class ActivityLogSerializer(serializers.ModelSerializer):
-    project_title = serializers.CharField(source='project.title', read_only=True)
-    user_name = serializers.CharField(source='user.username', read_only=True)
-
-    class Meta:
-        model = ActivityLog
-        fields = '__all__'  
-
-class NotificationSerializer(serializers.ModelSerializer):        
+class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = '__all__'
+
+class ActivityLogSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+    project_title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ActivityLog
+        fields = ['id', 'action', 'timestamp', 'user_name', 'project_title', 'project']
+
+    def get_user_name(self, obj):
+        return obj.user.username if obj.user else "Unknown User"
+
+    def get_project_title(self, obj):
+        return obj.project.title if obj.project else "Deleted Project"

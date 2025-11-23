@@ -29,8 +29,9 @@ const PersonalWorkspace = ({ user }) => {
     fetchData();
   }, []);
 
+  // Handles opening dialog for Create OR Edit
   const openDialog = (project = null) => {
-    setEditingProject(project);
+    setEditingProject(project); // If project is null, it's create mode. If object, it's edit.
     setShowDialog(true);
   };
 
@@ -38,28 +39,24 @@ const PersonalWorkspace = ({ user }) => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
     try {
       await api.delete(`/api/projects/${id}/`);
-      setProjects(projects.filter((p) => p.id !== id));
+      setProjects((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error("Failed to delete project", err);
-      alert("Failed to delete project");
     }
   };
 
   const handleProjectSubmit = async (formData) => {
     try {
       if (editingProject) {
-
+        // UPDATE
         await api.put(`/api/projects/${editingProject.id}/`, formData);
       } else {
-
-        await api.post("/api/projects/", formData);
+        // CREATE
+        await api.post("/api/projects/", { ...formData, project_type: "Personal" });
       }
-      
       setShowDialog(false);
-      
-
-      fetchData(); 
-      
+      setEditingProject(null); // Reset edit state
+      fetchData();
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 4000);
     } catch (err) {
@@ -82,7 +79,7 @@ const PersonalWorkspace = ({ user }) => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Personal Workspace</h2>
         <Button 
-          onClick={() => openDialog()}
+          onClick={() => openDialog(null)}
           className="flex items-center space-x-2 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800 transition"
         >
           New Project
@@ -93,18 +90,19 @@ const PersonalWorkspace = ({ user }) => {
         open={showDialog}
         onOpenChange={setShowDialog}
         onSubmit={handleProjectSubmit}
-        initialData={editingProject}
+        initialData={editingProject} // Pass the project to be edited
         projectType="Personal"
       />
 
       {projects.length === 0 ? (
-        <EmptyProjects onCreate={() => openDialog()} />
+        <EmptyProjects onCreate={() => openDialog(null)} />
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
             <ProjectCard
               key={project.id}
-              project={project} 
+              project={project}
+              // Pass the edit handler
               onEdit={() => openDialog(project)}
               onDelete={() => handleDelete(project.id)}
             />

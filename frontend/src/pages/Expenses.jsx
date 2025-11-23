@@ -1,220 +1,245 @@
-import React, { useState } from 'react';
-import ExpenseDisplay from '../components/ExpenseDisplay.jsx';
-import { Plus, X, Trash2, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, DollarSign, Calendar } from 'lucide-react';
+import api from '../api';
+import EmptyContainer from '../components/EmptyContainer';
 
 const Expenses = () => {
-  const [expenses, setExpenses] = useState([
-    { id: 1, description: 'Project Meeting Lunch', amount: 500, category: 'Food', date: '2024-11-08' },
-    { id: 2, description: 'Software License', amount: 2000, category: 'Software', date: '2024-11-05' },
-    { id: 3, description: 'Office Supplies', amount: 800, category: 'Supplies', date: '2024-11-03' },
-    { id: 4, description: 'Transportation', amount: 1200, category: 'Travel', date: '2024-11-07' },
-  ]);
-
+  const [expenses, setExpenses] = useState([]);
+  const [projects, setProjects] = useState([]); // Need projects for the dropdown
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  
+  // Form State
   const [newExpense, setNewExpense] = useState({
     description: '',
-    
     amount: '',
-    category: 'Food',
+    category: 'Other',
+    project: '', // Required by backend
     date: new Date().toISOString().split('T')[0],
   });
 
-  const handleAddExpense = (e) => {
-    e.preventDefault();
+  // 1. Fetch Data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [expRes, projRes] = await Promise.all([
+          api.get('/api/expenses/'),
+          api.get('/api/projects/')
+        ]);
+        setExpenses(expRes.data);
+        setProjects(projRes.data);
+        
+        // Set default project if available
+        if (projRes.data.length > 0) {
+            setNewExpense(prev => ({ ...prev, project: projRes.data[0].id }));
+        }
+      } catch (error) {
+        console.error("Error loading expenses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-    if (!newExpense.description || !newExpense.amount) {
-      alert('Please fill in all required fields.');
+  // 2. Handle Submit
+  const handleAddExpense = async (e) => {
+    e.preventDefault();
+    if (!newExpense.description || !newExpense.amount || !newExpense.project) {
+      alert('Please fill in all fields (Description, Amount, and Project).');
       return;
     }
 
-    setExpenses([
-      ...expenses,
-      {
-        id: Date.now(),
+    try {
+      const res = await api.post('/api/expenses/', {
         ...newExpense,
-        amount: parseFloat(newExpense.amount),
-      },
-    ]);
-
-    setNewExpense({
-      description: '',
-      amount: '',
-      category: 'Food',
-      date: new Date().toISOString().split('T')[0],
-    });
-    setShowForm(false);
-  };
-
-  const handleDeleteExpense = (id) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
-      setExpenses(expenses.filter((exp) => exp.id !== id));
+        project: parseInt(newExpense.project),
+        amount: parseFloat(newExpense.amount)
+      });
+      
+      setExpenses([res.data, ...expenses]); // Add to list
+      setShowForm(false);
+      setNewExpense({
+        description: '',
+        amount: '',
+        category: 'Other',
+        project: projects.length > 0 ? projects[0].id : '',
+        date: new Date().toISOString().split('T')[0],
+      });
+    } catch (error) {
+      console.error("Failed to add expense", error);
+      alert("Failed to save expense.");
     }
   };
 
+  // 3. Handle Delete
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this expense?")) return;
+    try {
+      await api.delete(`/api/expenses/${id}/`);
+      setExpenses(expenses.filter(e => e.id !== id));
+    } catch (error) {
+      console.error("Failed to delete expense", error);
+    }
+  };
+
+  // Helper to get Project Name from ID
+  const getProjectName = (id) => {
+    const p = projects.find(p => p.id === id);
+    return p ? p.title : 'Unknown Project';
+  };
+
+  const totalAmount = expenses.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+
+  if (loading) return <div className="p-8 text-center">Loading Expenses...</div>;
+
   return (
-    <div className="w-full">
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800">Expense Tracker</h2>
-          <p className="text-gray-600 mt-1">Track and manage your project expenses</p>
+          <h1 className="text-3xl font-bold text-gray-900">Expense Tracker</h1>
+          <p className="text-gray-500 mt-1">Monitor spending across all your projects.</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-all shadow-md hover:shadow-lg"
-        >
-          <Plus size={20} />
-          <span>Add Expense</span>
-        </button>
+        <div className="bg-green-50 px-6 py-3 rounded-xl border border-green-100 flex items-center gap-3">
+           <div className="bg-green-200 p-2 rounded-full">
+             <DollarSign className="text-green-800" size={20}/>
+           </div>
+           <div>
+             <p className="text-xs text-green-600 font-bold uppercase tracking-wider">Total Spent</p>
+             <p className="text-2xl font-bold text-green-800">${totalAmount.toFixed(2)}</p>
+           </div>
+        </div>
       </div>
 
-      {/* Expense Summary / Display Component */}
-      <ExpenseDisplay expenses={expenses} />
-
-      {/* Expenses List */}
-      {expenses.length > 0 ? (
-        <div className="bg-white rounded-xl shadow-md p-6 mt-8 border border-gray-200">
-          <h3 className="text-xl font-bold mb-6 text-gray-800">Recent Expenses</h3>
-          <div className="space-y-3">
-            {expenses.map((expense) => (
-              <div
-                key={expense.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-800 truncate">{expense.description}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">
-                      {expense.category}
-                    </span>
-                    <span className="text-xs text-gray-500">{expense.date}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 ml-4">
-                  <span className="text-lg font-bold text-green-700 whitespace-nowrap">
-                    ₱{expense.amount.toLocaleString()}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteExpense(expense.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition flex-shrink-0"
-                    title="Delete Expense"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl shadow-md border border-gray-200 mt-8">
-          <div className="text-gray-400 mb-4">
-            <DollarSign size={64} strokeWidth={1} />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">No expenses yet</h3>
-          <p className="text-gray-500 mb-6">Start tracking your project expenses</p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center space-x-2 px-6 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-all shadow-md hover:shadow-lg"
-          >
-            <Plus size={20} />
-            <span>Add First Expense</span>
-          </button>
-        </div>
+      {/* Add Button */}
+      {!showForm && (
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-green-800 transition shadow-sm"
+        >
+          <Plus size={18} /> Record New Expense
+        </button>
       )}
 
-      {/* Add Expense Modal */}
+      {/* Form */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md relative">
-            <button
-              onClick={() => setShowForm(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
-            >
-              <X size={24} />
-            </button>
-
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Add New Expense</h3>
-
-            <form onSubmit={handleAddExpense} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description *
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter expense description"
-                  value={newExpense.description}
-                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Amount (₱) *
-                </label>
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-green-100 animate-in fade-in slide-in-from-top-4">
+          <div className="flex justify-between items-center mb-4">
+             <h3 className="font-bold text-gray-800">New Expense Entry</h3>
+             <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><Trash2 size={18} className="hidden" /></button>
+          </div>
+          
+          <form onSubmit={handleAddExpense} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="lg:col-span-2">
+              <label className="block text-xs font-bold text-gray-500 mb-1">Description</label>
+              <input
+                type="text"
+                placeholder="e.g., Server Costs"
+                value={newExpense.description}
+                onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Amount</label>
+              <div className="relative">
+                <DollarSign size={14} className="absolute left-2.5 top-3 text-gray-400" />
                 <input
                   type="number"
-                  step="0.01"
-                  min="0"
                   placeholder="0.00"
                   value={newExpense.amount}
                   onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                  required
+                  className="w-full p-2 pl-8 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Category
-                </label>
-                <select
-                  value={newExpense.category}
-                  onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                >
-                  <option value="Food">Food</option>
-                  <option value="Software">Software</option>
-                  <option value="Supplies">Supplies</option>
-                  <option value="Travel">Travel</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Category</label>
+              <select
+                value={newExpense.category}
+                onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+                className="w-full p-2 border rounded-lg bg-white"
+              >
+                <option value="Food">Food</option>
+                <option value="Travel">Travel</option>
+                <option value="Software">Software</option>
+                <option value="Supplies">Supplies</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={newExpense.date}
-                  onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
-                />
-              </div>
+            <div>
+               <label className="block text-xs font-bold text-gray-500 mb-1">Project</label>
+               <select
+                  value={newExpense.project}
+                  onChange={(e) => setNewExpense({ ...newExpense, project: e.target.value })}
+                  className="w-full p-2 border rounded-lg bg-white"
+               >
+                 {projects.map(p => (
+                   <option key={p.id} value={p.id}>{p.title}</option>
+                 ))}
+               </select>
+            </div>
 
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 bg-green-700 text-white rounded-lg hover:bg-green-800 transition font-semibold shadow-md hover:shadow-lg"
-                >
-                  Add Expense
-                </button>
-              </div>
-            </form>
-          </div>
+            {/* Action Buttons Row */}
+            <div className="lg:col-span-5 flex justify-end gap-3 mt-2">
+               <button 
+                 type="button" 
+                 onClick={() => setShowForm(false)}
+                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+               >
+                 Cancel
+               </button>
+               <button 
+                 type="submit" 
+                 className="px-6 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 shadow-sm"
+               >
+                 Save Entry
+               </button>
+            </div>
+          </form>
         </div>
       )}
+
+      {/* List */}
+      <div className="space-y-4">
+        {expenses.length > 0 ? (
+          expenses.map((expense) => (
+            <div key={expense.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition flex justify-between items-center">
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-full ${expense.category === 'Food' ? 'bg-orange-100 text-orange-600' : expense.category === 'Travel' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                   <DollarSign size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800">{expense.description}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
+                    <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{expense.category}</span>
+                    <span>•</span>
+                    <span>{getProjectName(expense.project)}</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1"><Calendar size={10} /> {expense.date}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-6">
+                <span className="text-lg font-bold text-gray-900">-${parseFloat(expense.amount).toFixed(2)}</span>
+                <button 
+                  onClick={() => handleDelete(expense.id)}
+                  className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-red-50 rounded-full"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <EmptyContainer title="No Expenses Recorded" description="Add expenses to track project costs." />
+        )}
+      </div>
     </div>
   );
 };
