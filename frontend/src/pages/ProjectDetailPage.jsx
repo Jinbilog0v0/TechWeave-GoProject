@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router-dom"; 
 import api from "../api";
+
 import { AddTaskDialog } from "../components/AddTaskDialog";
+import { DeleteTaskDialog } from "../components/DeleteTaskDialog"; 
 import TaskBoard from "../components/TaskBoard"; 
+import ProjectMembersDialog from "../components/ProjectMemberDialog"; 
+import EmptyContainer from "../components/EmptyContainer"; 
+
 import { 
   ArrowLeft, Plus, Users, PieChart, Trash2, CheckCircle2, DollarSign, Calendar 
 } from "lucide-react";
@@ -17,8 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import ProjectMembersDialog from "../components/ProjectMemberDialog"; 
-import EmptyContainer from "../components/EmptyContainer"; 
 
 const ProjectDetailPage = () => {
   const { id } = useParams();
@@ -31,13 +34,18 @@ const ProjectDetailPage = () => {
   const [members, setMembers] = useState([]); 
   const [expenses, setExpenses] = useState([]); 
   const [loading, setLoading] = useState(true);
-  
-  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
+  const [taskToDeleteId, setTaskToDeleteId] = useState(null);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false); 
+  const [successMessage, setSuccessMessage] = useState("");
   
   const [showExpenseAlert, setShowExpenseAlert] = useState(false);
   const [expenseAlertMessage, setExpenseAlertMessage] = useState("");
 
-  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isMembersOpen, setIsMembersOpen] = useState(false);
 
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -54,16 +62,13 @@ const ProjectDetailPage = () => {
       const projRes = await api.get(`/api/projects/${id}/`);
       setProject(projRes.data);
 
-
       const tasksRes = await api.get(`/api/tasks/?project=${id}`); 
       setTasks(tasksRes.data);
 
-  
       if (projRes.data.project_type === 'Collaborative') {
           const memRes = await api.get(`/api/team-members/?project=${id}`);
           setMembers(memRes.data);
       }
-
 
       const expRes = await api.get('/api/expenses/');
       const projectExpenses = expRes.data.filter(e => e.project === parseInt(id));
@@ -80,10 +85,38 @@ const ProjectDetailPage = () => {
     fetchProjectData();
   }, [id, fetchProjectData]);
 
-  const handleTaskAdded = () => {
-    fetchProjectData(); 
+
+  const triggerSuccessAlert = (msg) => {
+    setSuccessMessage(msg);
     setShowSuccessAlert(true); 
-    setTimeout(() => setShowSuccessAlert(false), 4000); 
+    setTimeout(() => setShowSuccessAlert(false), 3000);
+  };
+
+  const handleAddTaskClick = () => {
+    setTaskToEdit(null);     
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleEditTaskClick = (task) => {
+    setTaskToEdit(task);     
+    setIsTaskDialogOpen(true); 
+  };
+
+  const handleDialogChange = (isOpen) => {
+    setIsTaskDialogOpen(isOpen);
+    if (!isOpen) {
+      setTaskToEdit(null); 
+    }
+  };
+
+  const handleTaskSaved = (savedTask, isEdit) => {
+    if (isEdit) {
+      setTasks(prev => prev.map(t => t.id === savedTask.id ? savedTask : t));
+      triggerSuccessAlert("Task updated successfully!"); 
+    } else {
+      setTasks(prev => [savedTask, ...prev]);
+      triggerSuccessAlert("New task created successfully!"); 
+    }
   };
 
   const handleUpdateTask = async (taskId, updatedFields) => {
@@ -97,16 +130,23 @@ const ProjectDetailPage = () => {
     }
   };
 
-  const handleDeleteTask = async (taskId) => {
-    if (!window.confirm("Are you sure you want to delete this task?")) {
-        return;
-    }
+  const initiateDelete = (taskId) => {
+    setTaskToDeleteId(taskId); 
+  };
+
+  const confirmDelete = async () => {
+    if (!taskToDeleteId) return;
+    setIsDeleteLoading(true);
     try {
-        await api.delete(`/api/tasks/${taskId}/`);
-        fetchProjectData(); 
+        await api.delete(`/api/tasks/${taskToDeleteId}/`);
+        setTasks(prev => prev.filter(t => t.id !== taskToDeleteId));
+        triggerSuccessAlert("Task deleted successfully."); // Updated call
+        setTaskToDeleteId(null); 
     } catch (error) {
-        console.error("Failed to delete task", error);
-        alert("Failed to delete task.");
+        console.error("Delete failed", error);
+        alert("Failed to delete task");
+    } finally {
+        setIsDeleteLoading(false);
     }
   };
 
@@ -180,17 +220,20 @@ const ProjectDetailPage = () => {
         <Alert className="fixed w-fit top-5 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-green-100 border border-green-200 shadow-lg px-6 py-4 rounded-lg pointer-events-auto">
           <CheckCircle2 className="text-green-700 w-6 h-6 shrink-0" />
           <AlertTitle className="text-green-800 font-medium">
-            New task successfully added!
+            {successMessage}
           </AlertTitle>
         </Alert>
       )}
 
+      {/* Success Alert (Expense) */}
       {showExpenseAlert && (
         <Alert className="fixed top-16 left-1/2 transform -translate-x-1/2 w-fit z-50 bg-green-100 border-green-200 text-green-800 shadow-lg animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="h-4 w-4 text-green-600 mr-2 inline" />
           <AlertTitle className="inline font-medium">{expenseAlertMessage}</AlertTitle>
         </Alert>
       )}
+
+      {/* Expense Delete Confirmation */}
       <AlertDialog open={!!expenseToDelete} onOpenChange={() => setExpenseToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -240,7 +283,7 @@ const ProjectDetailPage = () => {
           )}
 
           <button 
-            onClick={() => setIsTaskDialogOpen(true)}
+            onClick={handleAddTaskClick} 
             className="flex items-center px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 shadow-md transition"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -282,12 +325,10 @@ const ProjectDetailPage = () => {
           {tasks.length > 0 ? (
             <TaskBoard 
                 tasks={tasks} 
-                members={members} 
-                isCollaborative={isCollaborative} 
-                currentUser={currentUser} 
-                projectOwnerId={project.owner}
                 onUpdateTask={handleUpdateTask} 
-                onDeleteTask={handleDeleteTask}
+                onDeleteTask={initiateDelete} 
+                onEditTask={handleEditTaskClick} 
+                onSuccess={triggerSuccessAlert}
             />
           ) : (
             <div className="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
@@ -296,7 +337,7 @@ const ProjectDetailPage = () => {
           )}
       </div>
 
-      {/* 4. EXPENSE SECTION (Added Here) */}
+      {/* 4. EXPENSE SECTION */}
       <div className="space-y-6 pt-6 border-t border-gray-200">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -388,7 +429,7 @@ const ProjectDetailPage = () => {
               <div key={expense.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition flex justify-between items-center">
                 <div className="flex items-start gap-4">
                   <div className={`p-3 rounded-full ${expense.category === 'Food' ? 'bg-orange-100 text-orange-600' : expense.category === 'Travel' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
-                     <DollarSign size={20} />
+                      <DollarSign size={20} />
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-800">{expense.description}</h3>
@@ -419,11 +460,19 @@ const ProjectDetailPage = () => {
       {/* 5. Dialogs */}
       <AddTaskDialog 
         open={isTaskDialogOpen} 
-        onOpenChange={setIsTaskDialogOpen} 
+        onOpenChange={handleDialogChange} 
         projectId={project.id}
-        onTaskAdded={handleTaskAdded}
+        onTaskSaved={handleTaskSaved} 
+        taskToEdit={taskToEdit} 
       />
       
+      <DeleteTaskDialog 
+        open={!!taskToDeleteId} 
+        onOpenChange={(open) => !open && setTaskToDeleteId(null)}
+        onConfirm={confirmDelete}
+        loading={isDeleteLoading}
+      />
+
       {isCollaborative && (
           <ProjectMembersDialog 
               open={isMembersOpen}

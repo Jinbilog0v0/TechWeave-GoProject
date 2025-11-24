@@ -1,5 +1,16 @@
 import React from "react";
-import { Calendar, CheckCircle2, Circle, Clock, Paperclip, Upload, AlertCircle } from "lucide-react";
+import { 
+  Calendar, 
+  CheckCircle2, 
+  Circle, 
+  Clock, 
+  Paperclip, 
+  Upload, 
+  AlertCircle, 
+  Trash2, 
+  Pencil, 
+  Lock    
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -10,11 +21,11 @@ import {
 } from "@/components/ui/table";
 import api from "../api"; 
 
-const TaskBoard = ({ tasks, onUpdateTask }) => {
+const TaskBoard = ({ tasks, onUpdateTask, onDeleteTask, onEditTask, onSuccess }) => {
   
   const getStatusColor = (status) => {
     switch (status) {
-      case "Done": return "bg-green-100 text-green-700 hover:bg-green-200 border-green-200";
+      case "Done": return "bg-green-100 text-green-700 border-green-200"; 
       case "In Progress": return "bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200";
       case "Missed": return "bg-red-100 text-red-700 border-red-200 cursor-pointer hover:bg-red-200";
       default: return "bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200"; 
@@ -31,6 +42,8 @@ const TaskBoard = ({ tasks, onUpdateTask }) => {
   };
 
   const handleStatusClick = (task) => {
+    if (task.status === 'Done') return;
+
     const currentStatus = task.status;
     const manualCycle = ["To Do", "In Progress", "Done"];
 
@@ -53,13 +66,15 @@ const TaskBoard = ({ tasks, onUpdateTask }) => {
 
     try {
       await api.post('/api/attachments/', formData);
-      // Update the task status to 'Done'
       onUpdateTask(task.id, { status: 'Done' });
-      // Show the specific alert message
-      alert('File successfully uploaded: Task Done');
+      
+      if (onSuccess) {
+        onSuccess('File successfully uploaded: Task Done');
+      }
+
     } catch (error) {
       console.error("Upload failed", error);
-      alert("Failed to upload file.");
+      alert("Failed to upload file."); 
     }
   };
 
@@ -72,22 +87,29 @@ const TaskBoard = ({ tasks, onUpdateTask }) => {
             <TableHead className="text-center w-[150px]">Due Date</TableHead>
             <TableHead className="text-center w-[100px]">Priority</TableHead>
             <TableHead className="text-center w-[60px]">File</TableHead>
+            <TableHead className="text-center w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {tasks.map((task) => {
+            const isTaskDone = task.status === 'Done';
+
             return (
               <TableRow key={task.id} className="hover:bg-muted/50 group">
                 
-                {/* 1. Task */}
+                {/* 1. Task Title & Status */}
                 <TableCell className="font-medium pl-4">
                    <div className="flex flex-col gap-1.5">
-                      <span className={`${task.status === 'Done' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                      <span className={`${isTaskDone ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
                         {task.title}
                       </span>
                       <button 
                         onClick={() => handleStatusClick(task)}
-                        className={`w-fit px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide flex items-center border ${getStatusColor(task.status)}`}
+                        disabled={isTaskDone} // Disable click if Done
+                        className={`w-fit px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide flex items-center border transition-all
+                            ${getStatusColor(task.status)} 
+                            ${isTaskDone ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`
+                        }
                       >
                         {getStatusIcon(task.status)}
                         {task.status} 
@@ -100,9 +122,12 @@ const TaskBoard = ({ tasks, onUpdateTask }) => {
                    <input 
                       type="date" 
                       value={task.due_date || ""} 
+                      disabled={isTaskDone} // Disable input if Done
                       onChange={(e) => onUpdateTask(task.id, { due_date: e.target.value })}
                       className={`block text-sm p-1 rounded border shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 mx-auto
-                        ${task.status === 'Missed' ? 'border-red-300 bg-red-50 text-red-600' : 'border-gray-200 text-gray-600'}`}
+                        ${task.status === 'Missed' ? 'border-red-300 bg-red-50 text-red-600' : 'border-gray-200 text-gray-600'}
+                        ${isTaskDone ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-transparent shadow-none' : ''}
+                      `}
                    />
                 </TableCell>
 
@@ -111,21 +136,55 @@ const TaskBoard = ({ tasks, onUpdateTask }) => {
                    <span className={`text-xs uppercase font-bold px-2 py-1 rounded ${
                        task.priority === 'High' ? 'text-red-600 bg-red-50' : 
                        task.priority === 'Medium' ? 'text-yellow-600 bg-yellow-50' : 'text-blue-600 bg-blue-50'
-                    }`}>
+                    } ${isTaskDone ? 'opacity-50 grayscale' : ''}`}>
                       {task.priority}
                    </span>
                 </TableCell>
 
                 {/* 4. File Upload */}
                 <TableCell className="text-center">
-                   <label className="cursor-pointer p-2 rounded-full hover:bg-gray-100 transition-colors inline-block">
-                     <input type="file" className="hidden" onChange={(e) => handleFileChange(e, task)} />
-                     {task.attachments && task.attachments.length > 0 ? (
-                         <Paperclip className="w-4 h-4 text-blue-600" />
-                     ) : (
-                         <Upload className="w-4 h-4 text-gray-400 hover:text-green-600" />
-                     )}
+                   <label className={`p-2 rounded-full transition-colors inline-block ${isTaskDone ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}`}>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        disabled={isTaskDone} 
+                        onChange={(e) => handleFileChange(e, task)} 
+                      />
+                      {task.attachments && task.attachments.length > 0 ? (
+                          <Paperclip className={`w-4 h-4 ${isTaskDone ? 'text-gray-400' : 'text-blue-600'}`} />
+                      ) : (
+                          <Upload className={`w-4 h-4 ${isTaskDone ? 'text-gray-300' : 'text-gray-400 hover:text-green-600'}`} />
+                      )}
                    </label>
+                </TableCell>
+
+                {/* 5. Actions: Edit and Delete */}
+                <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                        {isTaskDone ? (
+                            <div className="flex items-center text-gray-300 gap-1 select-none" title="Task is locked">
+                                <Lock className="w-3 h-3" />
+                                <span className="text-[10px] uppercase font-bold">Done</span>
+                            </div>
+                        ) : (
+                            <>
+                                <button 
+                                    onClick={() => onEditTask && onEditTask(task)}
+                                    className="text-gray-500 hover:text-blue-600 transition-colors p-1 rounded hover:bg-blue-50"
+                                    title="Edit Task"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <button 
+                                    onClick={() => onDeleteTask && onDeleteTask(task.id)}
+                                    className="text-gray-500 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50"
+                                    title="Delete Task"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </TableCell>
 
               </TableRow>
