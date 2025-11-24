@@ -132,7 +132,7 @@ class Attachment(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
 
-def __str__(self):
+    def __str__(self):
         return f"Attachment for {self.task.title} by {self.uploaded_by.username}"    
 
 class Notification(models.Model):
