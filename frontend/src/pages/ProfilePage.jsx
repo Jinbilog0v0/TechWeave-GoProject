@@ -122,6 +122,8 @@ const ProfilePage = () => {
             if (setContextUser) {
                 setContextUser(updatedUser); 
             }
+
+            console.log(updatedUser)
             
             alert("Profile updated successfully!");
 
