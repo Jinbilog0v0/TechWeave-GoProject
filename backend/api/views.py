@@ -48,7 +48,8 @@ class GetUserView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
-    
+
+# ✅ FIXED: UpdateUserView now returns data in the same format as GetUserView
 class UpdateUserView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
@@ -67,6 +68,7 @@ class UpdateUserView(APIView):
 
         errors = {}
 
+        # Validation
         if username and username != user.username:
             if User.objects.exclude(pk=user.pk).filter(username=username).exists():
                 errors["username"] = "This username is already taken."
@@ -84,36 +86,45 @@ class UpdateUserView(APIView):
         if errors:
             return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        if username: user.username = username
-        if email: user.email = email
+        # Update User model
+        if username: 
+            user.username = username
+        if email: 
+            user.email = email
         user.save()
 
+        # Update Profile model
         if not hasattr(user, 'profile'):
             Profile.objects.create(user=user)
         
         profile = user.profile
-        if role is not None: profile.role = role
-        if course is not None: profile.course = course
-        if bio is not None: profile.bio = bio
+        if role is not None: 
+            profile.role = role
+        if course is not None: 
+            profile.course = course
+        if bio is not None: 
+            profile.bio = bio
         
         if profile_picture: 
             profile.profile_picture = profile_picture
         
         profile.save()
 
+        # ✅ CRITICAL FIX: Return data in the SAME format as CustomUserSerializer
+        # This ensures consistency between GET and PUT responses
         profile_pic_url = None
         if profile.profile_picture:
             profile_pic_url = request.build_absolute_uri(profile.profile_picture.url)
 
         return Response({
-            "message": "Profile updated successfully",
+            "id": user.id,
             "username": user.username,
             "email": user.email,
             "profile": {
                 "role": profile.role,
                 "course": profile.course,
                 "bio": profile.bio,
-                "profile_picture": profile_pic_url 
+                "profile_picture": profile_pic_url
             }
         }, status=status.HTTP_200_OK)
     
@@ -127,7 +138,6 @@ class GoogleAuth(APIView):
             return Response({"error": "Token missing"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Replace with your actual Client ID from settings in production
             CLIENT_ID = "60255886290-9ujod65phbm7mrhb435gu4kj3qssb9ra.apps.googleusercontent.com"
             idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
             
@@ -320,13 +330,11 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
 class AttachmentListView(generics.ListCreateAPIView):
     queryset = Attachment.objects.all()
     serializer_class = AttachmentSerializer
-    permission_classes = [permissions.IsAuthenticated] # Ensure user is authenticated
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        # This is important: set the uploaded_by field to the current user
         serializer.save(uploaded_by=self.request.user)
 
-    # If you need to filter attachments by project/task
     def get_queryset(self):
         queryset = super().get_queryset()
         task_id = self.request.query_params.get('task')

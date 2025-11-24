@@ -8,35 +8,35 @@ class ProfilePictureSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['profile_picture']
 
-class CustomUserSerializer(serializers.ModelSerializer):
+# ✅ NEW: Separate ProfileSerializer for nested profile data
+class ProfileSerializer(serializers.ModelSerializer):
+    """Serializer for Profile model with proper profile picture URL"""
     profile_picture = serializers.SerializerMethodField()
-    role = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Profile
+        fields = ['role', 'course', 'bio', 'profile_picture']
+    
+    def get_profile_picture(self, obj):
+        if obj.profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.profile_picture.url)
+            return obj.profile_picture.url
+        return None
+
+# ✅ UPDATED: CustomUserSerializer now uses nested ProfileSerializer
+class CustomUserSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "password", "role", "profile_picture"]
+        fields = ["id", "username", "email", "password", "profile"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
-        # 🔑 This is the crucial step
         user = User.objects.create_user(**validated_data)
         return user
-
-    def get_profile_picture(self, obj):
-        try:
-            if hasattr(obj, 'profile') and obj.profile.profile_picture:
-                return obj.profile.profile_picture.url
-        except Exception:
-            pass 
-        return None
-
-    def get_role(self, obj):
-        try:
-            if hasattr(obj, 'profile'):
-                return obj.profile.role
-        except Exception:
-            pass
-        return 'Student'
 
 class AttachmentSerializer(serializers.ModelSerializer):
     uploaded_by_username = serializers.ReadOnlyField(source='uploaded_by.username')
@@ -117,22 +117,19 @@ class ProjectSerializer(serializers.ModelSerializer):
         return project
 
     def update(self, instance, validated_data):
-        member_ids = validated_data.pop('member_ids', None) # 
+        member_ids = validated_data.pop('member_ids', None)
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
         instance.end_date = validated_data.get('end_date', instance.end_date)
         instance.priority = validated_data.get('priority', instance.priority)
         instance.project_type = validated_data.get('project_type', instance.project_type)
-        instance.status = validated_data.get('status', instance.status) # Ensure status is handled
+        instance.status = validated_data.get('status', instance.status)
         instance.start_date = validated_data.get('start_date', instance.start_date)
 
         instance.save()
 
-        # Handle member updates if needed, though your frontend says members are handled separately for updates
         if member_ids is not None:
-             # This part depends on how you want to handle updating members for an existing project.
-             # Your frontend code currently doesn't send members for updates (`member_ids: []` in initialData logic)
-             pass # 
+             pass
         return instance
 
 class TeamMemberSerializer(serializers.ModelSerializer):
