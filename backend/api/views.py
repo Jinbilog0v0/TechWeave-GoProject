@@ -1,9 +1,7 @@
 from django.shortcuts import render
+from django.db import models
 from django.contrib.auth.models import User
-from django.db.models import Q  # <--- Added this important import
-from django.conf import settings
-from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
+from django.db.models import Q
 from rest_framework import viewsets, generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,38 +11,39 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from .permissions import IsProjectOwnerOrReadOnly, IsTeamMemberOrOwner
-from rest_framework.exceptions import PermissionDenied
+from .permissions import IsTeamMemberOrOwner, IsOwnerOrReadOnly
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from django.utils import timezone
+from django.core.validators import validate_email
 
-# Import Models
 from .models import (
     Project, Task, TeamMember, Comment, Attachment, 
     ActivityLog, Notification, Expense, Profile
 )
 
-# Import Serializers
 from .serializers import (
-    UserSerializer, ProjectSerializer, TaskSerializer,
+    ProjectSerializer, TaskSerializer,
     TeamMemberSerializer, CommentSerializer, AttachmentSerializer,
-    NotificationSerializer, ExpenseSerializer, ActivityLogSerializer
+    NotificationSerializer, ExpenseSerializer, ActivityLogSerializer,
+    CustomUserSerializer 
 )
 
 # ---------------------------------------------------------
-# USER MANAGEMENT (Auth, Registration, Profile)
+# USER MANAGEMENT
 # ---------------------------------------------------------
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = CustomUserSerializer 
     permission_classes = [AllowAny]
 
 class UserListView(generics.ListAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = CustomUserSerializer 
     permission_classes = [IsAuthenticated]
 
 class GetUserView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
+    serializer_class = CustomUserSerializer 
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
@@ -68,7 +67,6 @@ class UpdateUserView(APIView):
 
         errors = {}
 
-        # Validation
         if username and username != user.username:
             if User.objects.exclude(pk=user.pk).filter(username=username).exists():
                 errors["username"] = "This username is already taken."
@@ -86,12 +84,10 @@ class UpdateUserView(APIView):
         if errors:
             return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update User
         if username: user.username = username
         if email: user.email = email
         user.save()
 
-        # Update Profile
         if not hasattr(user, 'profile'):
             Profile.objects.create(user=user)
         
@@ -100,16 +96,13 @@ class UpdateUserView(APIView):
         if course is not None: profile.course = course
         if bio is not None: profile.bio = bio
         
-        # Handle Image Upload
         if profile_picture: 
             profile.profile_picture = profile_picture
         
         profile.save()
 
-        # --- GENERATE ABSOLUTE URL HERE ---
         profile_pic_url = None
         if profile.profile_picture:
-            # This converts '/media/xyz.jpg' -> 'http://127.0.0.1:8000/media/xyz.jpg'
             profile_pic_url = request.build_absolute_uri(profile.profile_picture.url)
 
         return Response({
@@ -134,6 +127,7 @@ class GoogleAuth(APIView):
             return Response({"error": "Token missing"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # Replace with your actual Client ID from settings in production
             CLIENT_ID = "60255886290-9ujod65phbm7mrhb435gu4kj3qssb9ra.apps.googleusercontent.com"
             idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
             
@@ -162,58 +156,100 @@ class GoogleAuth(APIView):
 
 class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
-    permission_classes = [IsAuthenticated, IsProjectOwnerOrReadOnly] 
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly] 
 
     def get_queryset(self):
         user = self.request.user
-        # Use Q objects for robust OR logic
         queryset = Project.objects.filter(
             Q(owner=user) | Q(team_members__user=user)
         ).distinct()
 
-        project_type = self.request.query_params.get('type')
+        project_type = self.request.query_params.get('type') 
         if project_type:
-            queryset = queryset.filter(project_type=project_type)
+            queryset = queryset.filter(project_type=project_type) 
             
         return queryset
 
     def perform_create(self, serializer):
-        project_type = self.request.data.get('project_type', 'Collaborative')
-        members_data = self.request.data.get('members', [])
-        
-        project = serializer.save(owner=self.request.user, project_type=project_type)
-
-        if members_data:
-            users_to_add = User.objects.filter(id__in=members_data).exclude(id=self.request.user.id)
-            team_members = [
-                TeamMember(project=project, user=user, role='Member')
-                for user in users_to_add
-            ]
-            TeamMember.objects.bulk_create(team_members)
+        serializer.save(owner=self.request.user)
 
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]
-    permission_classes = [permissions.IsAuthenticated, IsTeamMemberOrOwner]
+    permission_classes = [IsTeamMemberOrOwner]
 
     def get_queryset(self):
-        user = self.request.user
-        return Task.objects.filter(
-            project__in=Project.objects.filter(
-                Q(owner=user) | Q(team_members__user=user)
-            )
-        ).distinct()
+        Task.objects.filter(
+            due_date__lt=timezone.now().date(),
+            status__in=['To Do', 'In Progress', 'Pending'] 
+        ).exclude(
+            status__in=['Done', 'Missed']
+        ).update(status='Missed')
+
+        queryset = Task.objects.all()
+        project_id = self.request.query_params.get('project')
+
+        if project_id:
+            try:
+                project = Project.objects.get(id=project_id)
+            except Project.DoesNotExist:
+                raise PermissionDenied("Project not found.")
+
+            if self.request.user == project.owner or project.team_members.filter(user=self.request.user).exists():
+                return queryset.filter(project=project).distinct()
+            else:
+                raise PermissionDenied("You do not have permission to view tasks for this project.")
+        else:
+            user_projects = Project.objects.filter(
+                models.Q(owner=self.request.user) |
+                models.Q(team_members__user=self.request.user)
+            ).distinct()
+            return queryset.filter(project__in=user_projects).distinct()
 
     def perform_create(self, serializer):
-        project = serializer.validated_data.get('project')
-        if project:
-            is_owner = project.owner == self.request.user
-            is_member = project.team_members.filter(user=self.request.user).exists()
-            
-            if not (is_owner or is_member):
-                raise PermissionDenied("You do not have permission to add tasks to this project.")
-        
+        project = serializer.validated_data['project']
+        if not project.team_members.filter(user=self.request.user).exists() and self.request.user != project.owner:
+             raise PermissionDenied("You must be the project owner or a member of the project to create tasks.")
         serializer.save()
+
+    def _check_assignment_permission(self, request, task_instance):
+        """Helper method to check if the user is allowed to change assignments."""
+        if 'assigned_to' in request.data:
+            if request.user != task_instance.project.owner:
+                request.data.pop('assigned_to')  
+        return request
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object() 
+        if hasattr(request.data, '_mutable'):
+            request.data._mutable = True
+        
+        request = self._check_assignment_permission(request, instance) 
+        
+        if hasattr(request.data, '_mutable'):
+            request.data._mutable = False
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object() 
+        if hasattr(request.data, '_mutable'):
+            request.data._mutable = True
+        
+        request = self._check_assignment_permission(request, instance)
+
+        if hasattr(request.data, '_mutable'):
+            request.data._mutable = False     
+        return super().partial_update(request, *args, **kwargs)
+    
+    def perform_destroy(self, instance):
+        if instance.project.owner:
+            ActivityLog.objects.create(
+                project=instance.project,
+                user=self.request.user,
+                action=f"deleted task '{instance.title}'",
+                task=instance
+            )
+        instance.delete()
+
 
 class TeamMemberViewSet(viewsets.ModelViewSet):
     serializer_class = TeamMemberSerializer
@@ -221,11 +257,23 @@ class TeamMemberViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        return TeamMember.objects.filter(
+        queryset = TeamMember.objects.filter(
             project__in=Project.objects.filter(
                 Q(owner=user) | Q(team_members__user=user)
             )
         ).distinct()
+
+        project_id = self.request.query_params.get('project')
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
+            
+        return queryset
+    
+    def perform_create(self, serializer):
+        project = serializer.validated_data.get('project')
+        if project.owner != self.request.user:
+            raise permissions.PermissionDenied("Only the project owner can add team members.")
+        serializer.save()
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
@@ -254,7 +302,6 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return Notification.objects.filter(user=self.request.user).order_by('-created_at')
 
-# --- FIXED ACTIVITY LOG VIEWSET ---
 class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ActivityLogSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -273,11 +320,19 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
 class AttachmentListView(generics.ListCreateAPIView):
     queryset = Attachment.objects.all()
     serializer_class = AttachmentSerializer
-    permission_classes = [IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [permissions.IsAuthenticated] # Ensure user is authenticated
 
     def perform_create(self, serializer):
+        # This is important: set the uploaded_by field to the current user
         serializer.save(uploaded_by=self.request.user)
+
+    # If you need to filter attachments by project/task
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        task_id = self.request.query_params.get('task')
+        if task_id:
+            queryset = queryset.filter(task_id=task_id)
+        return queryset
 
 class DashboardStatsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -285,7 +340,6 @@ class DashboardStatsView(APIView):
     def get(self, request):
         user = request.user
         
-        # Use Q for projects query
         projects = Project.objects.filter(
             Q(owner=user) | Q(team_members__user=user)
         ).distinct()

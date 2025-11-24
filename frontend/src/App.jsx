@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
@@ -11,7 +11,6 @@ import Expenses from './pages/Expenses.jsx'
 import NotFound from './pages/NotFound.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Layout from './pages/Layout.jsx'
-import Settings from './pages/Settings.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import ProjectDetailPage from './pages/ProjectDetailPage.jsx'
@@ -21,66 +20,42 @@ function Logout() {
   return <Navigate to ="/" />;
 }
 
-  function RegisterAndLogout() {
-    localStorage.clear();
-    return <Register />
-  }
+function RegisterAndLogout() {
+  localStorage.clear();
+  return <Register />
+}
 
 function App() {
-
   return (
     <BrowserRouter>
-
       <Routes>
-
-        {/* <Route path="/" element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        } /> */}
+        {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
-        <Route path="logout" element={<Logout />} />
+        <Route path="/logout" element={<Logout />} />
         <Route path="/register" element={<RegisterAndLogout />} />
-        <Route path="*" element={<NotFound />} />
 
-
-        <Route element={<Layout />}>
-
-          <Route path="/about" element={
-              <About />
-          } />
-
-          <Route path="/home" element={
-              <Home /> } />
-
-          <Route path="/analytics" element={
-              <Analytics />
-          } />
-
-          <Route path="/personalworkspace" element={
-              <PersonalWorkspace />
-          } />
-
-          <Route path="/collaborativeworkspace" element={
-              <CollaborativeWorkspace />
-          } />
-
-          <Route path="/expensetrack" element={
-              <Expenses />
-          } />
-
-          <Route path="/settings" element={ <Settings /> } />
-
+        {/* Protected Routes */}
+        {/* We wrap Layout in ProtectedRoute. If authorized, Layout renders. 
+            If Layout renders, it renders the <Outlet> which shows the child routes. */}
+        <Route 
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/home" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/personalworkspace" element={<PersonalWorkspace />} />
+          <Route path="/collaborativeworkspace" element={<CollaborativeWorkspace />} />
+          <Route path="/expensetrack" element={<Expenses />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
-          <Route path='/profile' element={<ProfilePage />}  />
-        
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
-
-
-
+        <Route path="*" element={<NotFound />} />
       </Routes>
-
     </BrowserRouter>
   )
 }

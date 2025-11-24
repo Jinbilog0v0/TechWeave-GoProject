@@ -4,22 +4,41 @@ import EmptyProjects from "../components/EmptyProjects";
 import {
   Alert,
   AlertTitle,
+  AlertDescription,
 } from "@/components/ui/alert"
-import { CheckCircle2Icon } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { CheckCircle2Icon, AlertCircle } from "lucide-react";
 import AddCollaborativeProjectDialog from "../components/AddCollaborativeProjectDialog";
 import ProjectMemberDialog from "../components/ProjectMemberDialog";
 import api from "../api";
-import { Button } from "@/components/ui/button"; // Make sure Button is imported
+import { Button } from "@/components/ui/button"; 
 
 const CollaborativeWorkspace = () => {
   const [projects, setProjects] = useState([]);
   const [showDialog, setShowDialog] = useState(false);
   const [editingProject, setEditingProject] = useState(null); 
   const [loading, setLoading] = useState(true);
-  const [showAlert, setShowAlert] = useState(false);
+  
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(""); 
+  
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
+
+  const [projectToDelete, setProjectToDelete] = useState(null);
 
   const handleViewMembers = async (projectId) => {
     setShowMembersDialog(true);
@@ -58,50 +77,137 @@ const CollaborativeWorkspace = () => {
     setShowDialog(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this project?")) return;
+  const initiateDelete = (id) => {
+    setProjectToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
+
     try {
-      await api.delete(`/api/projects/${id}/`);
-      setProjects((prev) => prev.filter((p) => p.id !== id));
+      await api.delete(`/api/projects/${projectToDelete}/`);
+      setProjects((prev) => prev.filter((p) => p.id !== projectToDelete));
+      
+      setSuccessMessage("Deleted a project"); 
+      setShowSuccessAlert(true);
+      setTimeout(() => setShowSuccessAlert(false), 4000);
     } catch (err) {
       console.error("Failed to delete project", err);
-      alert("Failed to delete project");
+      let msg = "Failed to delete project.";
+      if (err.response && err.response.data && err.response.data.detail) {
+          msg = err.response.data.detail;
+      } else if (err.response && err.response.statusText) {
+          msg = `Failed to delete project: ${err.response.statusText}`;
+      }
+      setErrorMessage(msg);
+      setShowErrorAlert(true);
+      setTimeout(() => setShowErrorAlert(false), 5000);
+    } finally {
+        setProjectToDelete(null); 
     }
   };
 
   const handleProjectSubmit = async (formData) => {
     try {
+      let msg = "";
       if (editingProject) {
-         // Update logic - just update details, members handled separately
-         await api.put(`/api/projects/${editingProject.id}/`, formData);
+        await api.put(`/api/projects/${editingProject.id}/`, formData);
+        msg = "Project updated successfully!";
       } else {
-         // Create logic - requires members
-         await api.post("/api/projects/", { ...formData, project_type: "Collaborative" });
+        await api.post("/api/projects/", { ...formData, project_type: "Collaborative" });
+        msg = "New project successfully added!";
       }
       
       setShowDialog(false);
       setEditingProject(null); 
       fetchData();
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 4000);
+      
+      setSuccessMessage(msg); 
+      setShowSuccessAlert(true);
+      setTimeout(() => setShowSuccessAlert(false), 4000);
+      setShowErrorAlert(false);
     } catch (err) {
-      console.error(err);
-      alert("Failed to save project");
+      console.error("Failed to save project:", err);
+      let msg = "Failed to save project: An unexpected error occurred.";
+
+      if (err.response) {
+        if (err.response.status === 403) {
+            msg = "You are not authorized to perform this action. Please log in again.";
+        } else if (err.response.data && typeof err.response.data === 'object') {
+             const details = Object.entries(err.response.data)
+                .map(([key, val]) => {
+                    const errorDetail = Array.isArray(val) ? val.join(", ") : val;
+                    return `${key}: ${errorDetail}`;
+                })
+                .join("; ");
+             msg = `Validation failed: ${details || "Please check your input."}`;
+        } else if (err.response.data) {
+            msg = `Failed to save project: ${err.response.data}`;
+        } else if (err.response.statusText) {
+            msg = `Failed to save project: ${err.response.statusText}`;
+        }
+      } else if (err.request) {
+          msg = "Failed to save project: No response from server. Please check your internet connection or server status.";
+      }
+      
+      setErrorMessage(msg);
+      setShowErrorAlert(true);
+      setTimeout(() => setShowErrorAlert(false), 8000);
+      setShowSuccessAlert(false);
     }
   };
 
   return (
     <div className="p-8">
-      {showAlert && (
+      {/* Success Alert */}
+      {showSuccessAlert && (
         <Alert
-          className="fixed w-200 top-5 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-green-100 border border-green-200 shadow-lg px-6 py-4 rounded-lg pointer-events-auto"
+          className="fixed w-fit top-5 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-green-100 border border-green-200 shadow-lg px-6 py-4 rounded-lg pointer-events-auto"
         >
           <CheckCircle2Icon className="text-green-700 w-6 h-6 shrink-0" />
           <AlertTitle className="text-green-800 font-medium">
-            {editingProject ? "Project updated successfully!" : "New project successfully added!"}
+            {successMessage}
           </AlertTitle>
         </Alert>
       )}
+
+      {/* Error Alert */}
+      {showErrorAlert && (
+        <Alert
+          className="fixed w-fit top-5 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-red-100 border border-red-200 shadow-lg px-6 py-4 rounded-lg pointer-events-auto"
+        >
+          <AlertCircle className="text-red-700 w-6 h-6 shrink-0" />
+          <div className="flex flex-col">
+            <AlertTitle className="text-red-800 font-medium">
+              Error!
+            </AlertTitle>
+            <AlertDescription className="text-red-700">
+              {errorMessage}
+            </AlertDescription>
+          </div>
+        </Alert>
+      )}
+
+      {/* Confirm Delete Dialog */}
+      <AlertDialog open={!!projectToDelete} onOpenChange={() => setProjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the project and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
        <ProjectMemberDialog 
           open={showMembersDialog} 
@@ -113,7 +219,6 @@ const CollaborativeWorkspace = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Collaborative Workspace</h2>
         
-        {/* FIX: No triggerText here. The dialog is hidden until showDialog is true */}
         <AddCollaborativeProjectDialog
           open={showDialog}
           onOpenChange={setShowDialog}
@@ -121,7 +226,6 @@ const CollaborativeWorkspace = () => {
           initialData={editingProject} 
         />
         
-        {/* This is the ONLY button that triggers the Create mode */}
         <Button 
             onClick={() => openDialog(null)}
             className="flex items-center px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition"
@@ -147,7 +251,7 @@ const CollaborativeWorkspace = () => {
               collaborative
               onViewMembers={() => handleViewMembers(project.id)}
               onEdit={() => openDialog(project)} 
-              onDelete={() => handleDelete(project.id)}
+              onDelete={() => initiateDelete(project.id)}
             />
           ))}
         </div>

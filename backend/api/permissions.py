@@ -1,20 +1,18 @@
 from rest_framework import permissions
 
-class IsProjectOwnerOrReadOnly(permissions.BasePermission):
+class IsOwnerOrReadOnly(permissions.BasePermission):
     """
-    Custom permission to only allow owners of an object to edit/delete it.
-    Works for Projects (checks .owner) and Tasks/Expenses (checks .project.owner).
+    Custom permission to only allow owners of an object to edit it.
     """
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
+        return obj.owner == request.user
 
-        if hasattr(obj, 'owner'):
-            return obj.owner == request.user
-        elif hasattr(obj, 'project'): 
-            return obj.project.owner == request.user
-            
-        return False
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            return request.user and request.user.is_authenticated
+        return request.user and request.user.is_authenticated
 
 class IsTeamMemberOrOwner(permissions.BasePermission):
     """

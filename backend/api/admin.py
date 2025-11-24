@@ -13,9 +13,14 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('title', 'project', 'assigned_to', 'status', 'priority', 'due_date')
-    list_filter = ('status', 'priority')
-    search_fields = ('title', 'project__title', 'assigned_to__username')
+
+    def get_assigned_members(self, obj):
+        return ", ".join([user.username for user in obj.assigned_to.all()])
+    
+    get_assigned_members.short_description = 'Assigned Members'
+    list_display = ('title', 'project', 'status', 'priority', 'due_date', 'get_assigned_members')
+    list_filter = ('status', 'priority', 'project')
+    search_fields = ('title', 'description')
 
 @admin.register(TeamMember)
 class TeamMemberAdmin(admin.ModelAdmin):

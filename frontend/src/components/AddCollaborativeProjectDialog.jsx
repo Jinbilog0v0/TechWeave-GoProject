@@ -5,7 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription, // 1. Ensure this is imported
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,26 +13,23 @@ import { Label } from "@/components/ui/label";
 import api from "../api";
 
 export function AddCollaborativeProjectDialog({
-  open, // Controlled via 'open' prop
+  open,
   onOpenChange,
   onSubmit,
   initialData = null,
 }) {
-  // Removed triggerText prop to avoid duplicate button logic
-
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     end_date: "",
     priority: "Medium",
-    members: [], // Array of IDs
+    member_ids: [],
   });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch users only when creating a new project (not needed for edit)
   useEffect(() => {
-    if (!initialData) {
+    if (open && !initialData) { 
       async function fetchUsers() {
         try {
           const res = await api.get("/api/users/");
@@ -42,11 +39,12 @@ export function AddCollaborativeProjectDialog({
         }
       }
       fetchUsers();
+    } else if (!open) {
+        setUsers([]);
     }
-  }, [initialData]);
+  }, [open, initialData]); 
 
-  // Handle Edit vs Create Mode
-  useEffect(() => {
+useEffect(() => {
     if (initialData) {
       setFormData({
         title: initialData.title || "",
@@ -55,19 +53,18 @@ export function AddCollaborativeProjectDialog({
           ? new Date(initialData.end_date).toISOString().split("T")[0]
           : "",
         priority: initialData.priority || "Medium",
-        members: [], // Members not needed/editable here during update
+        member_ids: [],
       });
     } else {
-      // Reset for Create Mode
       setFormData({
         title: "",
         description: "",
         end_date: "",
         priority: "Medium",
-        members: [],
+        member_ids: [],
       });
     }
-  }, [initialData, open]);
+  }, [initialData, open]); 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,11 +73,11 @@ export function AddCollaborativeProjectDialog({
 
   const toggleMember = (userId) => {
     setFormData((prev) => {
-      const isSelected = prev.members.includes(userId);
+      const isSelected = prev.member_ids.includes(userId);
       if (isSelected) {
-        return { ...prev, members: prev.members.filter((id) => id !== userId) };
+        return { ...prev, member_ids: prev.member_ids.filter((id) => id !== userId) };
       } else {
-        return { ...prev, members: [...prev.members, userId] };
+        return { ...prev, member_ids: [...prev.member_ids, userId] };
       }
     });
   };
@@ -88,15 +85,14 @@ export function AddCollaborativeProjectDialog({
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // VALIDATION FIX: Only require members if we are CREATING (initialData is null)
-    // When editing, we skip this check because member management is done separately.
-    if (!initialData && formData.members.length === 0) {
+    if (!initialData && formData.member_ids.length === 0) {
       alert("Please select at least one team member.");
       return;
     }
     
     setLoading(true);
-    onSubmit(formData).finally(() => setLoading(false));
+    const dataToSend = initialData ? formData : { ...formData, project_type: "Collaborative" };
+    onSubmit(dataToSend).finally(() => setLoading(false));
   };
 
   return (
@@ -105,7 +101,6 @@ export function AddCollaborativeProjectDialog({
         <DialogHeader>
           <DialogTitle>{initialData ? "Edit Project" : "Create Team Project"}</DialogTitle>
           
-          {/* 2. Add DialogDescription here to fix the warning */}
           <DialogDescription>
             {initialData 
               ? "Update the project details below." 
@@ -171,7 +166,6 @@ export function AddCollaborativeProjectDialog({
               </div>
             </div>
 
-            {/* Member Selection - HIDDEN DURING EDIT MODE */}
             {!initialData && (
               <div className="grid gap-2">
                 <Label>Add Team Members</Label>
@@ -184,7 +178,7 @@ export function AddCollaborativeProjectDialog({
                         <input
                           type="checkbox"
                           id={`user-${user.id}`}
-                          checked={formData.members.includes(user.id)}
+                          checked={formData.member_ids.includes(user.id)}
                           onChange={() => toggleMember(user.id)}
                           className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
                         />
@@ -202,7 +196,7 @@ export function AddCollaborativeProjectDialog({
                   )}
                 </div>
                 <p className="text-xs text-gray-500 text-right">
-                  Selected: {formData.members.length}
+                  Selected: {formData.member_ids.length}
                 </p>
               </div>
             )}

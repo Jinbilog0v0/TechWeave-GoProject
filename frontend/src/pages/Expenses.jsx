@@ -1,24 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, DollarSign, Calendar } from 'lucide-react';
+import { Plus, Trash2, DollarSign, Calendar, CheckCircle2 } from 'lucide-react';
 import api from '../api';
 import EmptyContainer from '../components/EmptyContainer';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+
 const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
-  const [projects, setProjects] = useState([]); // Need projects for the dropdown
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   
-  // Form State
+  const [expenseToDelete, setExpenseToDelete] = useState(null); 
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+
   const [newExpense, setNewExpense] = useState({
     description: '',
     amount: '',
     category: 'Other',
-    project: '', // Required by backend
+    project: '',
     date: new Date().toISOString().split('T')[0],
   });
 
-  // 1. Fetch Data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -29,7 +42,6 @@ const Expenses = () => {
         setExpenses(expRes.data);
         setProjects(projRes.data);
         
-        // Set default project if available
         if (projRes.data.length > 0) {
             setNewExpense(prev => ({ ...prev, project: projRes.data[0].id }));
         }
@@ -42,11 +54,10 @@ const Expenses = () => {
     fetchData();
   }, []);
 
-  // 2. Handle Submit
   const handleAddExpense = async (e) => {
     e.preventDefault();
     if (!newExpense.description || !newExpense.amount || !newExpense.project) {
-      alert('Please fill in all fields (Description, Amount, and Project).');
+      alert('Please fill in all fields.');
       return;
     }
 
@@ -57,7 +68,7 @@ const Expenses = () => {
         amount: parseFloat(newExpense.amount)
       });
       
-      setExpenses([res.data, ...expenses]); // Add to list
+      setExpenses([res.data, ...expenses]);
       setShowForm(false);
       setNewExpense({
         description: '',
@@ -68,22 +79,29 @@ const Expenses = () => {
       });
     } catch (error) {
       console.error("Failed to add expense", error);
-      alert("Failed to save expense.");
     }
   };
 
-  // 3. Handle Delete
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this expense?")) return;
+  const initiateDelete = (id) => {
+    setExpenseToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!expenseToDelete) return;
+
     try {
-      await api.delete(`/api/expenses/${id}/`);
-      setExpenses(expenses.filter(e => e.id !== id));
+      await api.delete(`/api/expenses/${expenseToDelete}/`);
+      setExpenses(expenses.filter(e => e.id !== expenseToDelete));
+      
+      setShowSuccessAlert(true);
+      setTimeout(() => setShowSuccessAlert(false), 3000); 
     } catch (error) {
       console.error("Failed to delete expense", error);
+    } finally {
+      setExpenseToDelete(null); // Close Dialog
     }
   };
 
-  // Helper to get Project Name from ID
   const getProjectName = (id) => {
     const p = projects.find(p => p.id === id);
     return p ? p.title : 'Unknown Project';
@@ -94,7 +112,32 @@ const Expenses = () => {
   if (loading) return <div className="p-8 text-center">Loading Expenses...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
+    <div className="max-w-6xl mx-auto p-6 space-y-8 relative">
+      
+      {showSuccessAlert && (
+        <Alert className="fixed top-6 left-1/2 transform -translate-x-1/2 w-fit z-50 bg-green-100 border-green-200 text-green-800 shadow-lg animate-in fade-in slide-in-from-top-2">
+          <CheckCircle2 className="h-4 w-4 text-green-600 mr-2 inline" />
+          <AlertTitle className="inline font-medium">Deleted Successfully</AlertTitle>
+        </Alert>
+      )}
+
+      <AlertDialog open={!!expenseToDelete} onOpenChange={() => setExpenseToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently remove this expense record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -127,7 +170,6 @@ const Expenses = () => {
         <div className="bg-white p-6 rounded-xl shadow-lg border border-green-100 animate-in fade-in slide-in-from-top-4">
           <div className="flex justify-between items-center mb-4">
              <h3 className="font-bold text-gray-800">New Expense Entry</h3>
-             <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><Trash2 size={18} className="hidden" /></button>
           </div>
           
           <form onSubmit={handleAddExpense} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -174,9 +216,9 @@ const Expenses = () => {
             <div>
                <label className="block text-xs font-bold text-gray-500 mb-1">Project</label>
                <select
-                  value={newExpense.project}
-                  onChange={(e) => setNewExpense({ ...newExpense, project: e.target.value })}
-                  className="w-full p-2 border rounded-lg bg-white"
+                 value={newExpense.project}
+                 onChange={(e) => setNewExpense({ ...newExpense, project: e.target.value })}
+                 className="w-full p-2 border rounded-lg bg-white"
                >
                  {projects.map(p => (
                    <option key={p.id} value={p.id}>{p.title}</option>
@@ -184,7 +226,6 @@ const Expenses = () => {
                </select>
             </div>
 
-            {/* Action Buttons Row */}
             <div className="lg:col-span-5 flex justify-end gap-3 mt-2">
                <button 
                  type="button" 
@@ -204,7 +245,6 @@ const Expenses = () => {
         </div>
       )}
 
-      {/* List */}
       <div className="space-y-4">
         {expenses.length > 0 ? (
           expenses.map((expense) => (
@@ -228,7 +268,7 @@ const Expenses = () => {
               <div className="flex items-center gap-6">
                 <span className="text-lg font-bold text-gray-900">-${parseFloat(expense.amount).toFixed(2)}</span>
                 <button 
-                  onClick={() => handleDelete(expense.id)}
+                  onClick={() => initiateDelete(expense.id)}
                   className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-red-50 rounded-full"
                 >
                   <Trash2 size={18} />

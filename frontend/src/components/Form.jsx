@@ -23,7 +23,7 @@ function Form({ route, method }) {
         try {
             const payload = isLogin
                 ? { username, password }
-                : { username, email, password }; // backend doesn’t use email right now
+                : { username, email, password }; 
 
             const res = await api.post(route, payload);
 
