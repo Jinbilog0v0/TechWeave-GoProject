@@ -124,6 +124,7 @@ const ProfilePage = () => {
             }
             
             alert("Profile updated successfully!");
+            navigate ('/home');
 
         } catch (error) {
             console.error("Update failed", error);
