@@ -1,146 +1,162 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-	DialogDescription
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import api from "../api";
 
-export function AddTaskDialog({ open, onOpenChange, projectId, onTaskAdded }) {
-	const [title, setTitle] = useState("");
-	const [priority, setPriority] = useState("Medium");
-	const [dueDate, setDueDate] = useState(new Date().toISOString().split("T")[0]);
+export function AddTaskDialog({ open, onOpenChange, projectId, onTaskSaved, taskToEdit = null }) {
+    const [title, setTitle] = useState("");
+    const [priority, setPriority] = useState("Medium");
+    const [dueDate, setDueDate] = useState("");
 
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState(null); // State to hold error messages
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-	const handleSubmit = async (e) => {
-		e.preventDefault();
-		setError(null); // Clear previous errors
-		if (!title.trim()) {
-			setError("Task title cannot be empty.");
-			return;
-		}
+    useEffect(() => {
+        if (open) {
+            if (taskToEdit) {
+                setTitle(taskToEdit.title);
+                setPriority(taskToEdit.priority || "Medium");
+                setDueDate(taskToEdit.due_date || "");
+            } else {
+                setTitle("");
+                setPriority("Medium");
+                setDueDate(new Date().toISOString().split("T")[0]);
+            }
+            setError(null);
+        }
+    }, [open, taskToEdit]);
 
-		setLoading(true);
-		try {
-			console.log("Sending task data:", { title, project: projectId, status: "To Do", priority });
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+        
+        if (!title.trim()) {
+            setError("Task title cannot be empty.");
+            return;
+        }
 
-			const res = await api.post("/api/tasks/", {
-				title: title,
-				project: projectId,
-				status: "Pending",
-				priority: priority,
-				due_date: dueDate || null,
-			});
+        setLoading(true);
+        try {
+            let res;
+            if (taskToEdit) {
+                res = await api.patch(`/api/tasks/${taskToEdit.id}/`, {
+                    title,
+                    priority,
+                    due_date: dueDate || null,
+                });
+            } else {
+                res = await api.post("/api/tasks/", {
+                    title,
+                    project: projectId,
+                    status: "Pending", 
+                    priority,
+                    due_date: dueDate || null,
+                });
+            }
 
-			onTaskAdded(res.data);
-			setTitle("");
-			setPriority("Medium");
-			onOpenChange(false);
-		} catch (error) {
-			console.error("Failed to add task:", error);
-			// *** IMPORTANT DEBUGGING STEP ***
-			if (error.response && error.response.data) {
-				console.error("Backend Error Details:", error.response.data);
-				// Attempt to parse and display a user-friendly error
-				let errorMessage = "Failed to add task. Please check your inputs.";
-				if (typeof error.response.data === 'object') {
-						const messages = Object.values(error.response.data).flat();
-						errorMessage = messages.join(' ');
-				} else if (typeof error.response.data === 'string') {
-						errorMessage = error.response.data;
-				}
-				setError(errorMessage);
-			} else {
-				setError("An unexpected error occurred. Please try again.");
-			}
-		} finally {
-			setLoading(false);
-		}
-	};
+            onTaskSaved(res.data, !!taskToEdit); 
+            onOpenChange(false);
 
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[425px]">
-				<DialogHeader>
-					<DialogTitle>Add New Task</DialogTitle>
-					<DialogDescription>
-						Create a new task for this project. Click save when you're done.
-					</DialogDescription>
-				</DialogHeader>
-				<form onSubmit={handleSubmit} className="grid gap-4 py-4">
+        } catch (error) {
+            console.error("Operation failed:", error);
+            if (error.response && error.response.data) {
+                let errorMessage = "Operation failed.";
+                if (typeof error.response.data === 'object') {
+                    errorMessage = Object.values(error.response.data).flat().join(' ');
+                } else if (typeof error.response.data === 'string') {
+                    errorMessage = error.response.data;
+                }
+                setError(errorMessage);
+            } else {
+                setError("An unexpected error occurred.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
-					{error && ( // Display error message if present
-						<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative text-sm" role="alert">
-							{error}
-						</div>
-					)}
+    const isEditMode = !!taskToEdit;
 
-					<div className="grid gap-2">
-						<Label htmlFor="task-title">Task Name</Label>
-						<Input
-							id="task-title"
-							value={title}
-							onChange={(e) => setTitle(e.target.value)}
-							placeholder="e.g. Draft Documentation"
-							required
-							aria-invalid={!!error} // Indicate invalid state for accessibility
-							aria-describedby={error ? "task-title-error" : undefined}
-						/>
-						{error && ( // Optional: specific error message for title field
-							<p id="task-title-error" className="text-red-600 text-sm mt-1">{error.title?.[0]}</p>
-						)}
-					</div>
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>{isEditMode ? "Edit Task" : "Add New Task"}</DialogTitle>
+                    <DialogDescription>
+                        {isEditMode 
+                            ? "Make changes to the task details below." 
+                            : "Create a new task for this project."}
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
 
-					<div className="grid gap-2">
-						<Label htmlFor="priority">Priority</Label>
-						<Select value={priority} onValueChange={setPriority}>
-							<SelectTrigger>
-								<SelectValue placeholder="Select priority" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="Low">Low</SelectItem>
-								<SelectItem value="Medium">Medium</SelectItem>
-								<SelectItem value="High">High</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded text-sm">
+                            {error}
+                        </div>
+                    )}
 
-					<div className="grid gap-2">
-						<Label htmlFor="due-date">Due Date</Label>
-						<Input
-							id="due-date"
-							type="date"
-							value={dueDate}
-							onChange={(e) => setDueDate(e.target.value)}
-						/>
-					</div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="task-title">Task Name</Label>
+                        <Input
+                            id="task-title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="e.g. Draft Documentation"
+                            required
+                        />
+                    </div>
 
+                    <div className="grid gap-2">
+                        <Label htmlFor="priority">Priority</Label>
+                        <Select value={priority} onValueChange={setPriority}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Low">Low</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="High">High</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-					<DialogFooter>
-						<Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-							Cancel
-						</Button>
-						<Button type="submit" disabled={loading} className="bg-green-700 text-white">
-							{loading ? "Adding..." : "Add Task"}
-						</Button>
-					</DialogFooter>
-				</form>
-			</DialogContent>
-		</Dialog>
-	);
+                    <div className="grid gap-2">
+                        <Label htmlFor="due-date">Due Date</Label>
+                        <Input
+                            id="due-date"
+                            type="date"
+                            value={dueDate}
+                            onChange={(e) => setDueDate(e.target.value)}
+                        />
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={loading} className={`${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-700 hover:bg-green-800'} text-white`}>
+                            {loading ? "Saving..." : isEditMode ? "Update Task" : "Add Task"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
 }

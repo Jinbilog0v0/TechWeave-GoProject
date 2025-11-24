@@ -99,7 +99,16 @@ useEffect(() => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{initialData ? "Edit Project" : "Create Team Project"}</DialogTitle>
+          <DialogTitle className="flex items-center text-green-600">
+            <div className="flex items-center">
+                <img
+                  src="/Images/TemporaryLogo-removebg.png"
+                  className="w-8 h-8 inline-block mb-2"
+                  alt="Logo"
+                />
+              </div>
+            {initialData ? "Edit Project" : "Create Team Project"}
+            </DialogTitle>
           
           <DialogDescription>
             {initialData 
