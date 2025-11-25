@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, DollarSign, Calendar, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, DollarSign, Calendar, CheckCircle2, PhilippinePesoIcon, PhilippinePeso } from 'lucide-react';
 import api from '../api';
 import EmptyContainer from '../components/EmptyContainer';
 
@@ -251,7 +251,7 @@ const Expenses = () => {
             <div key={expense.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition flex justify-between items-center">
               <div className="flex items-start gap-4">
                 <div className={`p-3 rounded-full ${expense.category === 'Food' ? 'bg-orange-100 text-orange-600' : expense.category === 'Travel' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
-                   <DollarSign size={20} />
+                   <PhilippinePesoIcon size={20} />
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-800">{expense.description}</h3>
