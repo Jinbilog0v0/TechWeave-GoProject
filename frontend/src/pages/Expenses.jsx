@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, DollarSign, Calendar, CheckCircle2, PhilippinePesoIcon, PhilippinePeso } from 'lucide-react';
+import { Plus, Trash2, Calendar, CheckCircle2, PhilippinePesoIcon, PhilippinePeso } from 'lucide-react';
 import api from '../api';
 import EmptyContainer from '../components/EmptyContainer';
 
@@ -146,7 +146,7 @@ const Expenses = () => {
         </div>
         <div className="bg-green-50 px-6 py-3 rounded-xl border border-green-100 flex items-center gap-3">
            <div className="bg-green-200 p-2 rounded-full">
-             <DollarSign className="text-green-800" size={20}/>
+             <PhilippinePesoIcon className="text-green-800" size={20}/>
            </div>
            <div>
              <p className="text-xs text-green-600 font-bold uppercase tracking-wider">Total Spent</p>
@@ -187,7 +187,7 @@ const Expenses = () => {
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1">Amount</label>
               <div className="relative">
-                <DollarSign size={14} className="absolute left-2.5 top-3 text-gray-400" />
+                <PhilippinePesoIcon size={14} className="absolute left-2.5 top-3 text-gray-400" />
                 <input
                   type="number"
                   placeholder="0.00"
