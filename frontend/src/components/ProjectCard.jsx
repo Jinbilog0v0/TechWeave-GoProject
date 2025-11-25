@@ -13,7 +13,7 @@ const ProjectCard = ({ project, collaborative, onDelete, onViewMembers, onEdit }
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-700 hover:shadow-md transition-shadow flex flex-col h-full">
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col h-full">
       
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
