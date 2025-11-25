@@ -150,7 +150,7 @@ const Expenses = () => {
            </div>
            <div>
              <p className="text-xs text-green-600 font-bold uppercase tracking-wider">Total Spent</p>
-             <p className="text-2xl font-bold text-green-800">${totalAmount.toFixed(2)}</p>
+             <p className="text-2xl font-bold text-green-800">₱{totalAmount.toFixed(2)}</p>
            </div>
         </div>
       </div>
@@ -266,7 +266,7 @@ const Expenses = () => {
               </div>
               
               <div className="flex items-center gap-6">
-                <span className="text-lg font-bold text-gray-900">-${parseFloat(expense.amount).toFixed(2)}</span>
+                <span className="text-lg font-bold text-gray-900">-₱{parseFloat(expense.amount).toFixed(2)}</span>
                 <button 
                   onClick={() => initiateDelete(expense.id)}
                   className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-red-50 rounded-full"
