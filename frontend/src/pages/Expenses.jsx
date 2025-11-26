@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, DollarSign, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Calendar, CheckCircle2, PhilippinePesoIcon, PhilippinePeso } from 'lucide-react';
+import api from '../api';
+import EmptyContainer from '../components/EmptyContainer';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -179,13 +182,13 @@ const Expenses = () => {
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Expense Tracker</h1>
           <p className="text-sm md:text-base text-gray-500 mt-1">Monitor spending across all your projects.</p>
         </div>
-        <div className="w-full md:w-auto bg-green-50 px-6 py-3 rounded-xl border border-green-100 flex items-center gap-3">
-           <div className="bg-green-200 p-2 rounded-full shrink-0">
-             <DollarSign className="text-green-800" size={20}/>
+        <div className="bg-green-50 px-6 py-3 rounded-xl border border-green-100 flex items-center gap-3">
+           <div className="bg-green-200 p-2 rounded-full">
+             <PhilippinePesoIcon className="text-green-800" size={20}/>
            </div>
            <div>
              <p className="text-xs text-green-600 font-bold uppercase tracking-wider">Total Spent</p>
-             <p className="text-xl md:text-2xl font-bold text-green-800">${totalAmount.toFixed(2)}</p>
+             <p className="text-2xl font-bold text-green-800">₱{totalAmount.toFixed(2)}</p>
            </div>
         </div>
       </div>
@@ -220,7 +223,7 @@ const Expenses = () => {
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1">Amount</label>
               <div className="relative">
-                <DollarSign size={14} className="absolute left-2.5 top-3 text-gray-400" />
+                <PhilippinePesoIcon size={14} className="absolute left-2.5 top-3 text-gray-400" />
                 <input
                   type="number"
                   placeholder="0.00"
@@ -281,10 +284,10 @@ const Expenses = () => {
       <div className="space-y-4">
         {expenses.length > 0 ? (
           expenses.map((expense) => (
-            <div key={expense.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div className="flex items-start gap-4 w-full sm:w-auto">
-                <div className={`p-3 rounded-full shrink-0 ${expense.category === 'Food' ? 'bg-orange-100 text-orange-600' : expense.category === 'Travel' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
-                   <DollarSign size={20} />
+            <div key={expense.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition flex justify-between items-center">
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-full ${expense.category === 'Food' ? 'bg-orange-100 text-orange-600' : expense.category === 'Travel' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                   <PhilippinePesoIcon size={20} />
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-bold text-gray-800 break-words">{expense.description}</h3>
@@ -298,8 +301,8 @@ const Expenses = () => {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between w-full sm:w-auto sm:justify-end gap-6 pl-[60px] sm:pl-0">
-                <span className="text-lg font-bold text-gray-900">-${parseFloat(expense.amount).toFixed(2)}</span>
+              <div className="flex items-center gap-6">
+                <span className="text-lg font-bold text-gray-900">-₱{parseFloat(expense.amount).toFixed(2)}</span>
                 <button 
                   onClick={() => initiateDelete(expense.id)}
                   className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-red-50 rounded-full shrink-0"

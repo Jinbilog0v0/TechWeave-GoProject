@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, TrendingUp, Receipt } from 'lucide-react';
+import { DollarSign, TrendingUp, Receipt, PhilippinePesoIcon } from 'lucide-react';
 
 const ExpenseDisplay = ({ expenses }) => {
   const totalExpense = expenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -18,7 +18,7 @@ const ExpenseDisplay = ({ expenses }) => {
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium opacity-90">Total Expenses</span>
           <div className="p-2 bg-white bg-opacity-20 rounded-lg">
-            <DollarSign size={24} />
+            <PhilippinePesoIcon size={24} />
           </div>
         </div>
         <p className="text-3xl font-bold mb-1">₱{totalExpense.toLocaleString()}</p>

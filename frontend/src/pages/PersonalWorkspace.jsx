@@ -123,14 +123,14 @@ const PersonalWorkspace = () => {
         </Alert>
       )}
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Personal Workspace</h2>
-        <Button
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-bold text-gray-800">Personal Workspace</h2>
+        {/* <Button
           onClick={() => openDialog(null)}
           className="w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800 transition"
         >
           New Project
-        </Button>
+        </Button> */}
       </div>
 
       <AddProjectDialog

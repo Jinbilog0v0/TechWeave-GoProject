@@ -135,7 +135,8 @@ const ProfilePage = () => {
 
             console.log(updatedUser)
             
-            showAlert("success", "Profile updates successfully!")
+            alert("Profile updated successfully!");
+            navigate('/home');
 
         } catch (error) {
             console.error("Update failed", error);
