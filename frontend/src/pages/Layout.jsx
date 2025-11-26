@@ -69,15 +69,41 @@ const Layout = ({ onLogout }) => {
   ];
 
   return (
-    // FIX: Wrap the entire Layout content within AlertDialog
     <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen w-full overflow-hidden bg-gray-50">
         
-        {/* Desktop Sidebar */}
-        <div className="hidden md:flex flex-col w-64 bg-white shadow-lg animate-in slide-in-from-left duration-500 ease-out z-20">
+        {/* --- Mobile Top Header (Visible only on small screens) --- */}
+        <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b z-30 flex items-center px-4 justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="p-2 hover:bg-gray-100 rounded-md text-gray-700 transition"
+                >
+                  <Menu size={24} />
+                </button>
+                <div className="flex items-center gap-2">
+                     <img src="/Images/TemporaryLogo-removebg.png" alt="Logo" className="w-8 h-8" />
+                     <span className="font-bold text-lg text-green-700">GoProject</span>
+                </div>
+            </div>
+            {/* Optional: Small Profile Icon on Mobile Header */}
+            <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border border-gray-200"
+                style={{ backgroundColor: user?.profile?.profile_picture ? 'transparent' : (user ? stringToColor(user.username || user.email) : 'gray') }}
+                onClick={() => navigate('/profile')}
+            >
+                {getProfileImageUrl(user) ? (
+                    <img src={getProfileImageUrl(user)} className="w-full h-full object-cover" alt="Avatar" />
+                ) : (
+                    <span className="text-white font-bold text-xs">{getInitials(user?.username || user?.email)}</span>
+                )}
+            </div>
+        </div>
 
+        {/* --- Desktop Sidebar (Hidden on mobile) --- */}
+        <div className="hidden md:flex flex-col w-64 bg-white shadow-lg z-20 h-full border-r">
           <div className="p-6 border-b flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center animate-in zoom-in duration-700 delay-300 fill-mode-backwards">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center">
               <img src="/Images/TemporaryLogo-removebg.png" alt="Logo" className="w-10 h-10" />
             </div>
             <div>
@@ -91,17 +117,14 @@ const Layout = ({ onLogout }) => {
               {menuItems.map((item, index) => {
                 const Icon = item.icon;
                 const active = location.pathname === item.path;
-                const delayClass = `delay-[${index * 75}ms]`; 
                 
                 return (
                   <button
                     key={item.id}
                     onClick={() => item.action ? item.action() : navigate(item.path)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm transition-all duration-300
-                      ${active ? "bg-green-100 text-green-700 font-semibold translate-x-1" : "text-gray-700 hover:bg-gray-100 hover:translate-x-1"}
-                      animate-in slide-in-from-left-4 fade-in fill-mode-backwards ${index < 5 ? 'duration-500' : 'duration-0'}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm transition-all duration-200
+                      ${active ? "bg-green-100 text-green-700 font-semibold" : "text-gray-700 hover:bg-gray-100"}
                     `}
-                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <Icon size={20} />
                     <span>{item.label}</span>
@@ -111,22 +134,17 @@ const Layout = ({ onLogout }) => {
             </nav>
           </div>
 
-          <div className="p-4 border-t shrink-0 animate-in slide-in-from-bottom-4 duration-700 delay-500 fill-mode-backwards">
+          <div className="p-4 border-t shrink-0">
             <div 
               className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition"
               onClick={() => navigate('/profile')}
-              title="Go to Profile"
             >
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-gray-200 overflow-hidden"
                 style={{ backgroundColor: user?.profile?.profile_picture ? 'transparent' : (user ? stringToColor(user.username || user.email) : 'gray') }}
               >
                 {getProfileImageUrl(user) ? (
-                    <img 
-                      src={getProfileImageUrl(user)}
-                      className="w-full h-full object-cover" 
-                      alt="Avatar" 
-                    />
+                    <img src={getProfileImageUrl(user)} className="w-full h-full object-cover" alt="Avatar" />
                 ) : (
                   <span className="text-white font-bold text-sm">
                     {getInitials(user?.username || user?.email)}
@@ -137,33 +155,20 @@ const Layout = ({ onLogout }) => {
                 <p className="text-sm font-semibold truncate text-gray-800">{user?.username || "User"}</p>
                 <p className="text-xs text-gray-500 truncate">{user?.email || "email@example.com"}</p>
               </div>
-              {/* Logout Button with AlertDialogTrigger */}
               <AlertDialogTrigger asChild>
-                  <button
-                      // No need for onClick here, AlertDialogTrigger handles opening
-                      className="hover:bg-red-50 hover:text-red-600 p-2 rounded transition ml-auto"
-                      title="Logout"
-                  >
-                      <LogOut size={18} />
+                  <button className="hover:bg-red-50 hover:text-red-600 p-2 rounded transition ml-auto">
+                    <LogOut size={18} />
                   </button> 
               </AlertDialogTrigger>
             </div>
           </div>
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setIsSidebarOpen(true)} // Use isSidebarOpen state
-          className="md:hidden fixed top-4 left-4 bg-white p-2 rounded-md shadow-md z-20 hover:bg-gray-50 transition animate-in fade-in duration-500"
-        >
-          <Menu size={24} />
-        </button>
-
-        {/* Mobile Sidebar */}
-        {isSidebarOpen && ( // Use isSidebarOpen state
-          <div className="fixed inset-0 bg-black/40 z-30 md:hidden animate-in fade-in duration-300" onClick={() => setIsSidebarOpen(false)}>
+        {/* --- Mobile Sidebar Overlay --- */}
+        {isSidebarOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 md:hidden animate-in fade-in duration-200" onClick={() => setIsSidebarOpen(false)}>
             <div
-              className="absolute left-0 top-0 w-64 bg-white h-full shadow-lg flex flex-col animate-in slide-in-from-left duration-300"
+              className="absolute left-0 top-0 w-64 bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-300"
               onClick={(e) => e.stopPropagation()}
             >
                <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
@@ -196,31 +201,28 @@ const Layout = ({ onLogout }) => {
                        </button>
                      );
                    })}
-                   {/* Logout button in mobile sidebar */}
-                   <AlertDialogTrigger asChild>
-                      <button
-                          // No need for onClick here, AlertDialogTrigger handles opening
-                          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm transition text-red-700 hover:bg-red-50 font-semibold"
-                          title="Logout"
-                      >
-                          <LogOut size={20} />
-                          <span>Logout</span>
-                      </button>
-                   </AlertDialogTrigger>
+                   
+                   <div className="pt-4 mt-4 border-t">
+                       <AlertDialogTrigger asChild>
+                          <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm transition text-red-700 hover:bg-red-50 font-semibold">
+                              <LogOut size={20} />
+                              <span>Logout</span>
+                          </button>
+                       </AlertDialogTrigger>
+                   </div>
                  </div>
                </nav>
             </div>
           </div>
         )}
 
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 animate-in fade-in duration-700 delay-150 fill-mode-backwards">
-          <div className="p-4 md:p-6 lg:p-8">
-            <Outlet context={{ user, setUser }} />
-          </div>
+        {/* --- Main Content Area --- */}
+        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+            <main className="flex-1 overflow-y-auto pt-16 md:pt-0 p-4 md:p-6 lg:p-8">
+               <Outlet context={{ user, setUser }} />
+            </main>
         </div>
 
-  
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
@@ -233,8 +235,7 @@ const Layout = ({ onLogout }) => {
                 <Button variant="outline">Cancel</Button> 
             </AlertDialogCancel>
             <AlertDialogAction asChild>
-                <Button variant="destructive" onClick={handleLogout} 
-                className="bg-red-600 hover:bg-red-700 text-white">Log Out</Button>
+                <Button variant="destructive" onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white">Log Out</Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

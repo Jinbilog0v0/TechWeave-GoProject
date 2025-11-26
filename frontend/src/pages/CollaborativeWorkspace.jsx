@@ -27,17 +27,13 @@ const CollaborativeWorkspace = () => {
   const [showDialog, setShowDialog] = useState(false);
   const [editingProject, setEditingProject] = useState(null); 
   const [loading, setLoading] = useState(true);
-  
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [successMessage, setSuccessMessage] = useState(""); 
-  
   const [showErrorAlert, setShowErrorAlert] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
-
   const [projectToDelete, setProjectToDelete] = useState(null);
 
   const handleViewMembers = async (projectId) => {
@@ -158,14 +154,14 @@ const CollaborativeWorkspace = () => {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Success Alert */}
       {showSuccessAlert && (
         <Alert
-          className="fixed w-fit top-5 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-green-100 border border-green-200 shadow-lg px-6 py-4 rounded-lg pointer-events-auto"
+          className="fixed w-[90%] md:w-fit top-5 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-green-100 border border-green-200 shadow-lg px-6 py-4 rounded-lg pointer-events-auto"
         >
           <CheckCircle2Icon className="text-green-700 w-6 h-6 shrink-0" />
-          <AlertTitle className="text-green-800 font-medium">
+          <AlertTitle className="text-green-800 font-medium text-sm md:text-base">
             {successMessage}
           </AlertTitle>
         </Alert>
@@ -174,14 +170,14 @@ const CollaborativeWorkspace = () => {
       {/* Error Alert */}
       {showErrorAlert && (
         <Alert
-          className="fixed w-fit top-5 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-red-100 border border-red-200 shadow-lg px-6 py-4 rounded-lg pointer-events-auto"
+          className="fixed w-[90%] md:w-fit top-5 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-3 bg-red-100 border border-red-200 shadow-lg px-6 py-4 rounded-lg pointer-events-auto"
         >
           <AlertCircle className="text-red-700 w-6 h-6 shrink-0" />
           <div className="flex flex-col">
-            <AlertTitle className="text-red-800 font-medium">
+            <AlertTitle className="text-red-800 font-medium text-sm md:text-base">
               Error!
             </AlertTitle>
-            <AlertDescription className="text-red-700">
+            <AlertDescription className="text-red-700 text-xs md:text-sm">
               {errorMessage}
             </AlertDescription>
           </div>
@@ -190,14 +186,14 @@ const CollaborativeWorkspace = () => {
 
       {/* Confirm Delete Dialog */}
       <AlertDialog open={!!projectToDelete} onOpenChange={() => setProjectToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[90%] rounded-lg md:w-full">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the project and all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDelete}
@@ -216,8 +212,8 @@ const CollaborativeWorkspace = () => {
           loading={membersLoading}
        />
 
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800">Collaborative Workspace</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Collaborative Workspace</h2>
         
         <AddCollaborativeProjectDialog
           open={showDialog}
@@ -228,14 +224,16 @@ const CollaborativeWorkspace = () => {
         
         <Button 
             onClick={() => openDialog(null)}
-            className="flex items-center px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition"
+            className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition"
         >
             New Team Project
         </Button>
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Loading projects...</p>
+          <div>
+            <p className="text-center text-gray-500">Loading projects...</p>
+          </div>
       ) : projects.length === 0 ? (
         <EmptyProjects
           title="No Team Projects Yet"
@@ -243,7 +241,7 @@ const CollaborativeWorkspace = () => {
           onCreate={() => openDialog(null)}
         />
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
             <ProjectCard
               key={project.id}

@@ -13,21 +13,30 @@ import {
     BookOpen, 
     Briefcase, 
     Eye, 
-    ArrowRight 
+    ArrowRight, 
+    CheckCircle2,
+    AlertCircle,
+    X
 } from 'lucide-react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
+    const navigate = useNavigate();
     const context = useOutletContext();
     const contextUser = context?.user;
     const setContextUser = context?.setUser;
-
-    const navigate = useNavigate();
     const [localUser, setLocalUser] = useState(null);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [previewImage, setPreviewImage] = useState(null);
     const fileInputRef = useRef(null);
+    const [alert, setAlert] = useState(null);
+    const showAlert = (type, message) => {
+        setAlert({type, message});
+        setTimeout(() => {
+            setAlert(null);
+        }, 3000);
+    };
 
     const [formData, setFormData] = useState({
         username: '',
@@ -68,7 +77,7 @@ const ProfilePage = () => {
                 } catch (error) {
                     console.error("Failed to load profile:", error);
                     if (error.response && error.response.status === 401) {
-                         navigate('/'); 
+                          navigate('/'); 
                     }
                 } finally {
                     setInitialLoading(false);
@@ -98,6 +107,7 @@ const ProfilePage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setAlert(null);
 
         try {
             const data = new FormData();
@@ -130,7 +140,7 @@ const ProfilePage = () => {
 
         } catch (error) {
             console.error("Update failed", error);
-            alert("Failed to update profile.");
+            showAlert("Failed to update profile. Please try again");
         } finally {
             setLoading(false);
         }
@@ -151,19 +161,45 @@ const ProfilePage = () => {
     }
 
     return (
-        <div className="max-w-5xl mx-auto p-6 space-y-8">
+        <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8">
+
+            {alert && (
+                <div className={`fixed top-4  z-50 animate-in slide-in-from-top-2 fade-in duration-300 w-auto max-w-sm md:max-w-md shadow-lg rounded-lg border p-4 flex items-center gap-3 ${
+                    alert.type === 'success' 
+                        ? 'bg-white border-green-200 text-green-800' 
+                        : 'bg-white border-red-200 text-red-800'
+                }`}>
+                    {alert.type === 'success' ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+                    ) : (
+                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                    )}
+                    
+                    <div className="flex-1 text-sm font-medium">
+                        {alert.type === 'success' ? 'Success' : 'Error'}
+                        <p className="text-gray-600 font-normal mt-0.5">{alert.message}</p>
+                    </div>
+
+                    <button 
+                        onClick={() => setAlert(null)} 
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-                    <p className="text-gray-500 mt-1">Update your personal details and public profile.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Profile</h1>
+                    <p className="text-sm md:text-base text-gray-500 mt-1">Update your personal details and public profile.</p>
                 </div>
                 
                 {/* Optional: Redirect to Public Profile View if you implement it later */}
                 {/* <Button 
                     variant="outline" 
                     onClick={() => navigate('/profile/view')} 
-                    className="flex items-center gap-2 border-green-600 text-green-700 hover:bg-green-50"
+                    className="flex items-center gap-2 border-green-600 text-green-700 hover:bg-green-50 w-full md:w-auto"
                 >
                     <Eye className="w-4 h-4" />
                     View Public Profile
@@ -171,22 +207,22 @@ const ProfilePage = () => {
                 </Button> */}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
                 {/* Left Column: Avatar */}
                 <div className="lg:col-span-4 flex flex-col items-center">
                     <div className="w-full bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center text-center">
                         <div className="relative group cursor-pointer" onClick={handleImageClick}>
-                            <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-100 flex items-center justify-center">
+                            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-100 flex items-center justify-center">
                                 {previewImage ? (
                                     <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-5xl font-bold text-gray-400">
+                                    <span className="text-4xl md:text-5xl font-bold text-gray-400">
                                         {getInitials(formData.username)}
                                     </span>
                                 )}
                             </div>
                             <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Camera className="text-white w-10 h-10" />
+                                <Camera className="text-white w-8 h-8 md:w-10 md:h-10" />
                             </div>
                         </div>
                         
@@ -199,25 +235,25 @@ const ProfilePage = () => {
                         />
                         
                         <div className="mt-4 space-y-1">
-                            <h2 className="text-2xl font-bold text-gray-900">{formData.username || "User"}</h2>
+                            <h2 className="text-xl md:text-2xl font-bold text-gray-900 break-all">{formData.username || "User"}</h2>
                             <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-semibold uppercase tracking-wide">
                                 {formData.role}
                             </span>
                         </div>
-                        <p className="text-gray-500 text-sm mt-2">{formData.email}</p>
+                        <p className="text-gray-500 text-sm mt-2 break-all">{formData.email}</p>
                     </div>
                 </div>
 
                 {/* Right Column: Form */}
                 <div className="lg:col-span-8">
-                    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-6">
+                    <form onSubmit={handleSubmit} className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-gray-200 space-y-6">
                         <div className="space-y-6">
                             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                 <UserIcon className="w-5 h-5 text-green-700" /> 
                                 Basic Information
                             </h3>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="username">Username</Label>
                                     <div className="relative">
@@ -242,7 +278,6 @@ const ProfilePage = () => {
                                             value={formData.email} 
                                             onChange={handleChange} 
                                             className="pl-10"
-                                            // Removed 'readOnly' if it was there to make it editable
                                         />
                                     </div>
                                 </div>
@@ -257,7 +292,7 @@ const ProfilePage = () => {
                                 Academic Profile
                             </h3>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="role">Role</Label>
                                     <div className="relative">
@@ -305,7 +340,7 @@ const ProfilePage = () => {
                         </div>
 
                         <div className="flex justify-end pt-4 border-t border-gray-100">
-                            <Button type="submit" className="bg-green-700 hover:bg-green-800 text-white min-w-[140px]" disabled={loading}>
+                            <Button type="submit" className="w-full md:w-auto bg-green-700 hover:bg-green-800 text-white min-w-[140px]" disabled={loading}>
                                 {loading ? (
                                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
                                 ) : (

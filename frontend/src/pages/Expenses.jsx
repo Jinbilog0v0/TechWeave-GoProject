@@ -15,6 +15,45 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 
+// --- MOCKS FOR MISSING DEPENDENCIES ---
+
+const api = {
+  get: async (url) => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    if (url.includes('expenses')) {
+        return { data: [
+            { id: 1, description: "Server Hosting", amount: "150.00", category: "Software", project: 1, date: "2023-10-25" },
+            { id: 2, description: "Team Lunch", amount: "85.50", category: "Food", project: 2, date: "2023-10-26" },
+            { id: 3, description: "Uber to Client", amount: "32.00", category: "Travel", project: 1, date: "2023-10-27" },
+        ] };
+    }
+    if (url.includes('projects')) {
+        return { data: [
+            { id: 1, title: "Website Redesign" },
+            { id: 2, title: "Mobile App" },
+        ] };
+    }
+    return { data: [] };
+  },
+  post: async (url, data) => {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return { data: { id: Math.random(), ...data } };
+  },
+  delete: async () => new Promise(resolve => setTimeout(resolve, 500)),
+};
+
+const EmptyContainer = ({ title, description }) => (
+  <div className="flex flex-col items-center justify-center p-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl text-center">
+    <div className="bg-gray-100 p-3 rounded-full mb-3">
+        <DollarSign className="text-gray-400" size={24} />
+    </div>
+    <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
+    <p className="text-gray-500 text-sm">{description}</p>
+  </div>
+);
+
+// --- END MOCKS ---
+
 const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -98,7 +137,7 @@ const Expenses = () => {
     } catch (error) {
       console.error("Failed to delete expense", error);
     } finally {
-      setExpenseToDelete(null); // Close Dialog
+      setExpenseToDelete(null); 
     }
   };
 
@@ -109,27 +148,27 @@ const Expenses = () => {
 
   const totalAmount = expenses.reduce((sum, item) => sum + parseFloat(item.amount), 0);
 
-  if (loading) return <div className="p-8 text-center">Loading Expenses...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading Expenses...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8 relative">
+    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8 relative">
       
       {showSuccessAlert && (
-        <Alert className="fixed top-6 left-1/2 transform -translate-x-1/2 w-fit z-50 bg-green-100 border-green-200 text-green-800 shadow-lg animate-in fade-in slide-in-from-top-2">
+        <Alert className="fixed top-6 left-1/2 transform -translate-x-1/2 w-[90%] md:w-fit z-50 bg-green-100 border-green-200 text-green-800 shadow-lg animate-in fade-in slide-in-from-top-2">
           <CheckCircle2 className="h-4 w-4 text-green-600 mr-2 inline" />
-          <AlertTitle className="inline font-medium">Deleted Successfully</AlertTitle>
+          <AlertTitle className="inline font-medium text-sm">Deleted Successfully</AlertTitle>
         </Alert>
       )}
 
       <AlertDialog open={!!expenseToDelete} onOpenChange={() => setExpenseToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[90%] rounded-lg md:w-full">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently remove this expense record.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
               Delete
@@ -138,11 +177,10 @@ const Expenses = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Expense Tracker</h1>
-          <p className="text-gray-500 mt-1">Monitor spending across all your projects.</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Expense Tracker</h1>
+          <p className="text-sm md:text-base text-gray-500 mt-1">Monitor spending across all your projects.</p>
         </div>
         <div className="bg-green-50 px-6 py-3 rounded-xl border border-green-100 flex items-center gap-3">
            <div className="bg-green-200 p-2 rounded-full">
@@ -155,19 +193,17 @@ const Expenses = () => {
         </div>
       </div>
 
-      {/* Add Button */}
       {!showForm && (
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-green-800 transition shadow-sm"
+          className="w-full md:w-auto flex justify-center items-center gap-2 bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-green-800 transition shadow-sm"
         >
           <Plus size={18} /> Record New Expense
         </button>
       )}
 
-      {/* Form */}
       {showForm && (
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-green-100 animate-in fade-in slide-in-from-top-4">
+        <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg border border-green-100 animate-in fade-in slide-in-from-top-4">
           <div className="flex justify-between items-center mb-4">
              <h3 className="font-bold text-gray-800">New Expense Entry</h3>
           </div>
@@ -180,7 +216,7 @@ const Expenses = () => {
                 placeholder="e.g., Server Costs"
                 value={newExpense.description}
                 onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm"
               />
             </div>
             
@@ -193,7 +229,7 @@ const Expenses = () => {
                   placeholder="0.00"
                   value={newExpense.amount}
                   onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                  className="w-full p-2 pl-8 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                  className="w-full p-2 pl-8 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm"
                 />
               </div>
             </div>
@@ -203,7 +239,7 @@ const Expenses = () => {
               <select
                 value={newExpense.category}
                 onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
-                className="w-full p-2 border rounded-lg bg-white"
+                className="w-full p-2 border rounded-lg bg-white text-sm"
               >
                 <option value="Food">Food</option>
                 <option value="Travel">Travel</option>
@@ -218,7 +254,7 @@ const Expenses = () => {
                <select
                  value={newExpense.project}
                  onChange={(e) => setNewExpense({ ...newExpense, project: e.target.value })}
-                 className="w-full p-2 border rounded-lg bg-white"
+                 className="w-full p-2 border rounded-lg bg-white text-sm"
                >
                  {projects.map(p => (
                    <option key={p.id} value={p.id}>{p.title}</option>
@@ -226,17 +262,17 @@ const Expenses = () => {
                </select>
             </div>
 
-            <div className="lg:col-span-5 flex justify-end gap-3 mt-2">
+            <div className="lg:col-span-5 flex flex-col-reverse sm:flex-row justify-end gap-3 mt-2">
                <button 
                  type="button" 
                  onClick={() => setShowForm(false)}
-                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
+                 className="w-full sm:w-auto px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
                >
                  Cancel
                </button>
                <button 
                  type="submit" 
-                 className="px-6 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 shadow-sm"
+                 className="w-full sm:w-auto px-6 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 shadow-sm"
                >
                  Save Entry
                </button>
@@ -253,13 +289,13 @@ const Expenses = () => {
                 <div className={`p-3 rounded-full ${expense.category === 'Food' ? 'bg-orange-100 text-orange-600' : expense.category === 'Travel' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
                    <PhilippinePesoIcon size={20} />
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-800">{expense.description}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-gray-800 break-words">{expense.description}</h3>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 mt-0.5">
                     <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{expense.category}</span>
-                    <span>•</span>
-                    <span>{getProjectName(expense.project)}</span>
-                    <span>•</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="truncate max-w-[150px]">{getProjectName(expense.project)}</span>
+                    <span className="hidden sm:inline">•</span>
                     <span className="flex items-center gap-1"><Calendar size={10} /> {expense.date}</span>
                   </div>
                 </div>
@@ -269,7 +305,7 @@ const Expenses = () => {
                 <span className="text-lg font-bold text-gray-900">-₱{parseFloat(expense.amount).toFixed(2)}</span>
                 <button 
                   onClick={() => initiateDelete(expense.id)}
-                  className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-red-50 rounded-full"
+                  className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-red-50 rounded-full shrink-0"
                 >
                   <Trash2 size={18} />
                 </button>
