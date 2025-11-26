@@ -27,6 +27,11 @@ export function AddCollaborativeProjectDialog({
   });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+
+const filteredUsers = users.filter((u) =>
+  u.username.toLowerCase().includes(search.toLowerCase())
+);
 
   useEffect(() => {
     if (open && !initialData) { 
@@ -179,10 +184,15 @@ useEffect(() => {
               <div className="grid gap-2">
                 <Label>Add Team Members</Label>
                 <div className="border rounded-md p-3 h-40 overflow-y-auto space-y-2 bg-gray-50">
+                      <Input
+                        placeholder="Search users..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                      />
                   {users.length === 0 ? (
                     <p className="text-xs text-gray-500 text-center mt-4">No other users found.</p>
                   ) : (
-                    users.map((user) => (
+                    filteredUsers.map((user) => ( 
                       <div key={user.id} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
