@@ -29,15 +29,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/register" element={<RegisterAndLogout />} />
 
-        {/* Protected Routes */}
-        {/* We wrap Layout in ProtectedRoute. If authorized, Layout renders. 
-            If Layout renders, it renders the <Outlet> which shows the child routes. */}
         <Route 
           element={
             <ProtectedRoute>
@@ -53,6 +49,7 @@ function App() {
           <Route path="/expensetrack" element={<Expenses />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

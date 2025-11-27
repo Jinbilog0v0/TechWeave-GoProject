@@ -15,7 +15,7 @@ import {
 const EmptyProjects = ({
   onCreate,
   title = "No Projects Yet",
-  description = "You haven’t created any projects yet. Get started by creating your first project.",
+  description = "Create your first project to get started.",
   showLearnMore = false, // optional Learn More link
 }) => {
   return (
