@@ -30,11 +30,11 @@ const ProfilePage = () => {
     const [initialLoading, setInitialLoading] = useState(true);
     const [previewImage, setPreviewImage] = useState(null);
     const fileInputRef = useRef(null);
-    const [alert, setAlert] = useState(null);
+    const [formAlert, setFormAlert] = useState(null);
     const showAlert = (type, message) => {
-        setAlert({type, message});
+        setFormAlert({type, message});
         setTimeout(() => {
-            setAlert(null);
+            setFormAlert(null);
         }, 3000);
     };
 
@@ -107,7 +107,7 @@ const ProfilePage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setAlert(null);
+        setFormAlert(null);
 
         try {
             const data = new FormData();
@@ -135,8 +135,10 @@ const ProfilePage = () => {
 
             console.log(updatedUser)
             
-            alert("Profile updated successfully!");
-            navigate('/home');
+            showAlert('success', "Profile updated successfully!");
+            setTimeout(() => {
+                navigate('/home');
+            }, 1500); // Navigate after 1.5 seconds
 
         } catch (error) {
             console.error("Update failed", error);
@@ -163,25 +165,25 @@ const ProfilePage = () => {
     return (
         <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8">
 
-            {alert && (
+            {formAlert && (
                 <div className={`fixed top-4  z-50 animate-in slide-in-from-top-2 fade-in duration-300 w-auto max-w-sm md:max-w-md shadow-lg rounded-lg border p-4 flex items-center gap-3 ${
-                    alert.type === 'success' 
+                    formAlert.type === 'success' 
                         ? 'bg-white border-green-200 text-green-800' 
                         : 'bg-white border-red-200 text-red-800'
                 }`}>
-                    {alert.type === 'success' ? (
+                    {formAlert.type === 'success' ? (
                         <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
                     ) : (
                         <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
                     )}
                     
                     <div className="flex-1 text-sm font-medium">
-                        {alert.type === 'success' ? 'Success' : 'Error'}
-                        <p className="text-gray-600 font-normal mt-0.5">{alert.message}</p>
+                        {formAlert.type === 'success' ? 'Success' : 'Error'}
+                        <p className="text-gray-600 font-normal mt-0.5">{formAlert.message}</p>
                     </div>
 
                     <button 
-                        onClick={() => setAlert(null)} 
+                        onClick={() => setFormAlert(null)} 
                         className="text-gray-400 hover:text-gray-600 transition-colors"
                     >
                         <X className="w-4 h-4" />

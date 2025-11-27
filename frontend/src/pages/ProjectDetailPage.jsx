@@ -9,7 +9,7 @@ import ProjectMembersDialog from "../components/ProjectMemberDialog";
 import EmptyContainer from "../components/EmptyContainer"; 
 
 import { 
-  ArrowLeft, Plus, Users, PieChart, Trash2, CheckCircle2, DollarSign, Calendar 
+  ArrowLeft, Plus, Users, PieChart, Trash2, CheckCircle2, PhilippinePeso, Calendar 
 } from "lucide-react";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import {
@@ -342,13 +342,13 @@ const ProjectDetailPage = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-               <DollarSign className="w-6 h-6 text-green-700" /> Project Expenses
+               <PhilippinePeso className="w-6 h-6 text-green-700" /> Project Expenses
              </h2>
           </div>
           <div className="flex items-center gap-4">
             <div className="bg-green-50 px-4 py-2 rounded-lg border border-green-100">
                <span className="text-xs text-green-600 font-bold uppercase tracking-wider block">Total Spent</span>
-               <span className="text-xl font-bold text-green-800">${totalExpenseAmount.toFixed(2)}</span>
+               <span className="text-xl font-bold text-green-800 flex items-center"> <PhilippinePeso size={16}/> {totalExpenseAmount.toFixed(2)}</span>
             </div>
             {!showExpenseForm && (
               <button
@@ -379,7 +379,7 @@ const ProjectDetailPage = () => {
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Amount</label>
                 <div className="relative">
-                  <DollarSign size={14} className="absolute left-2.5 top-3 text-gray-400" />
+                  <PhilippinePeso size={14} className="absolute left-2.5 top-3 text-gray-400" />
                   <input
                     type="number"
                     placeholder="0.00"
@@ -429,7 +429,7 @@ const ProjectDetailPage = () => {
               <div key={expense.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition flex justify-between items-center">
                 <div className="flex items-start gap-4">
                   <div className={`p-3 rounded-full ${expense.category === 'Food' ? 'bg-orange-100 text-orange-600' : expense.category === 'Travel' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
-                      <DollarSign size={20} />
+                      <PhilippinePeso size={20} />
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-800">{expense.description}</h3>
@@ -441,7 +441,7 @@ const ProjectDetailPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
-                  <span className="text-lg font-bold text-gray-900">-${parseFloat(expense.amount).toFixed(2)}</span>
+                  <span className="text-lg font-bold text-gray-900 flex items-center">- <PhilippinePeso size={14}/> {parseFloat(expense.amount).toFixed(2)}</span>
                   <button 
                     onClick={() => initiateDeleteExpense(expense.id)}
                     className="text-gray-400 hover:text-red-500 transition p-2 hover:bg-red-50 rounded-full"

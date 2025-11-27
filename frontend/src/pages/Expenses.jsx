@@ -17,40 +17,9 @@ import { Alert, AlertTitle } from "@/components/ui/alert";
 
 // --- MOCKS FOR MISSING DEPENDENCIES ---
 
-const api = {
-  get: async (url) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    if (url.includes('expenses')) {
-        return { data: [
-            { id: 1, description: "Server Hosting", amount: "150.00", category: "Software", project: 1, date: "2023-10-25" },
-            { id: 2, description: "Team Lunch", amount: "85.50", category: "Food", project: 2, date: "2023-10-26" },
-            { id: 3, description: "Uber to Client", amount: "32.00", category: "Travel", project: 1, date: "2023-10-27" },
-        ] };
-    }
-    if (url.includes('projects')) {
-        return { data: [
-            { id: 1, title: "Website Redesign" },
-            { id: 2, title: "Mobile App" },
-        ] };
-    }
-    return { data: [] };
-  },
-  post: async (url, data) => {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return { data: { id: Math.random(), ...data } };
-  },
-  delete: async () => new Promise(resolve => setTimeout(resolve, 500)),
-};
 
-const EmptyContainer = ({ title, description }) => (
-  <div className="flex flex-col items-center justify-center p-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl text-center">
-    <div className="bg-gray-100 p-3 rounded-full mb-3">
-        <DollarSign className="text-gray-400" size={24} />
-    </div>
-    <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
-    <p className="text-gray-500 text-sm">{description}</p>
-  </div>
-);
+
+
 
 // --- END MOCKS ---
 
