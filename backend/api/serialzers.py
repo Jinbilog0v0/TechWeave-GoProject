@@ -8,7 +8,6 @@ class ProfilePictureSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['profile_picture']
 
-# ✅ NEW: Separate ProfileSerializer for nested profile data
 class ProfileSerializer(serializers.ModelSerializer):
     """Serializer for Profile model with proper profile picture URL"""
     profile_picture = serializers.SerializerMethodField()
@@ -25,7 +24,6 @@ class ProfileSerializer(serializers.ModelSerializer):
             return obj.profile_picture.url
         return None
 
-# ✅ UPDATED: CustomUserSerializer now uses nested ProfileSerializer
 class CustomUserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
 
