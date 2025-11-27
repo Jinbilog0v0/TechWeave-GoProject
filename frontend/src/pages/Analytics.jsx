@@ -3,59 +3,14 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, 
   CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
-import { TrendingUp, DollarSign, CheckCircle2, AlertCircle } from 'lucide-react';
+import { TrendingUp, PhilippinePeso, CheckCircle2, AlertCircle } from 'lucide-react';
 import { format, subDays, isSameDay, parseISO } from 'date-fns';
+import api from '../api';
+import EmptyContainer from '../components/EmptyContainer';
 
-// --- MOCKS FOR MISSING DEPENDENCIES ---
 
-const api = {
-  get: async (url) => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    if (url.includes('expenses')) {
-        return { data: [
-            { id: 1, amount: "150.00", category: "Software" },
-            { id: 2, amount: "85.50", category: "Food" },
-            { id: 3, amount: "32.00", category: "Travel" },
-            { id: 4, amount: "120.00", category: "Software" },
-            { id: 5, amount: "45.00", category: "Supplies" },
-        ] };
-    }
-    if (url.includes('activity-logs')) {
-        // Generate some fake logs for the last 7 days
-        const logs = [];
-        for(let i=0; i<7; i++) {
-            const date = subDays(new Date(), i);
-            const count = Math.floor(Math.random() * 5); // 0-4 tasks per day
-            for(let j=0; j<count; j++) {
-                logs.push({ timestamp: date.toISOString(), action: "Task Completed" });
-            }
-        }
-        return { data: logs };
-    }
-    if (url.includes('tasks')) {
-        return { data: [
-            { id: 1, status: 'Done' },
-            { id: 2, status: 'Done' },
-            { id: 3, status: 'In Progress' },
-            { id: 4, status: 'Todo' },
-            { id: 5, status: 'Done' },
-        ] };
-    }
-    return { data: [] };
-  },
-};
 
-const EmptyContainer = ({ title, description }) => (
-  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-    <div className="bg-gray-100 p-3 rounded-full mb-3">
-        <TrendingUp className="text-gray-400" size={24} />
-    </div>
-    <h3 className="text-lg font-semibold text-gray-700">{title}</h3>
-    <p className="text-gray-500 text-sm">{description}</p>
-  </div>
-);
 
-// --- END MOCKS ---
 
 const Analytics = () => {
   const [expenses, setExpenses] = useState([]);
@@ -136,10 +91,10 @@ const Analytics = () => {
         <div className="bg-purple-600 p-6 rounded-xl shadow-sm border border-purple-500 flex items-center justify-between">
           <div>
             <p className="text-sm text-purple-100 font-medium">Total Expenses</p>
-            <p className="text-2xl font-bold text-white">${totalSpent.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-white flex items-center"> <PhilippinePeso size={20}/> {totalSpent.toFixed(2)}</p>
           </div>
           <div className="p-3 bg-purple-500/30 rounded-full text-white">
-            <DollarSign size={24} />
+            <PhilippinePeso size={24} />
           </div>
         </div>
 
@@ -171,7 +126,7 @@ const Analytics = () => {
         <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 h-80 md:h-96 flex flex-col">
           <div className="flex items-center justify-between mb-4 md:mb-6 shrink-0">
             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <DollarSign size={18} className="text-gray-400"/> Expense Breakdown
+              <PhilippinePeso size={18} className="text-gray-400"/> Expense Breakdown
             </h3>
           </div>
           
