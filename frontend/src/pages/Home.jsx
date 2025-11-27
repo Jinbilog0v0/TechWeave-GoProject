@@ -148,7 +148,7 @@ const Home = () => {
                 {[ 
                     { icon: Briefcase, label: "Personal Projects", value: totalPersonal, color: "bg-green-600", delay: "delay-100" },
                     { icon: Users, label: "Collaborative Projects", value: totalCollaborative, color: "bg-blue-600", delay: "delay-200" },
-                    { icon: PhilippinePeso, label: "Total Expenses", value: `P${totalExpenses}`, color: "bg-purple-600", delay: "delay-300" },
+                    { icon: PhilippinePeso, label: "Total Expenses", value: `₱${totalExpenses}`, color: "bg-purple-600", delay: "delay-300" },
                     { icon: CalendarDays, label: "Upcoming Tasks", value: upcomingTasks.length, color: "bg-orange-600", delay: "delay-500" },
                 ].map((stat, idx) => (
                     <div 

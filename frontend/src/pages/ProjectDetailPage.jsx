@@ -314,7 +314,6 @@ const ProjectDetailPage = () => {
             <div><strong>Status:</strong> <span className="font-medium">{project.status}</span></div>
             <div><strong>Priority:</strong> <span className="font-medium">{project.priority}</span></div>
             <div><strong>Type:</strong> <span className="font-medium">{project.project_type}</span></div>
-            <div><strong>Start Date:</strong> {project.start_date || 'N/A'}</div>
             <div><strong>End Date:</strong> {project.end_date || 'N/A'}</div>
             <div><strong>Owner:</strong> {project.owner_username}</div>
         </div>
