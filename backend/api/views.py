@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from google.oauth2 import id_token
+from rest_framework import serializers
 from google.auth.transport import requests
 from .permissions import IsTeamMemberOrOwner, IsOwnerOrReadOnly
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -21,7 +22,7 @@ from .models import (
     ActivityLog, Notification, Expense, Profile
 )
 
-from .serializers import (
+from .serialzers import (
     ProjectSerializer, TaskSerializer,
     TeamMemberSerializer, CommentSerializer, AttachmentSerializer,
     NotificationSerializer, ExpenseSerializer, ActivityLogSerializer,
@@ -49,7 +50,6 @@ class GetUserView(generics.RetrieveAPIView):
     def get_object(self):
         return self.request.user
 
-# ✅ FIXED: UpdateUserView now returns data in the same format as GetUserView
 class UpdateUserView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
@@ -110,8 +110,6 @@ class UpdateUserView(APIView):
         
         profile.save()
 
-        # ✅ CRITICAL FIX: Return data in the SAME format as CustomUserSerializer
-        # This ensures consistency between GET and PUT responses
         profile_pic_url = None
         if profile.profile_picture:
             profile_pic_url = request.build_absolute_uri(profile.profile_picture.url)

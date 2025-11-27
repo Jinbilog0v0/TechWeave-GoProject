@@ -151,7 +151,7 @@ export function AddTaskDialog({ open, onOpenChange, projectId, onTaskSaved, task
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={loading} className={`${isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-700 hover:bg-green-800'} text-white`}>
+                        <Button type="submit" disabled={loading} className={`${isEditMode ? 'bg-green-700 hover:bg-green-800' : 'bg-green-700 hover:bg-green-800'} text-white`}>
                             {loading ? "Saving..." : isEditMode ? "Update Task" : "Add Task"}
                         </Button>
                     </DialogFooter>

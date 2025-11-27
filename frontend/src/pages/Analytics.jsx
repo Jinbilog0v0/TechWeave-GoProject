@@ -3,10 +3,9 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, 
   CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
-import { TrendingUp, DollarSign, CheckCircle2, AlertCircle } from 'lucide-react';
+import { TrendingUp, DollarSign, CheckCircle2, AlertCircle, PhilippinePeso } from 'lucide-react';
 import { format, subDays, isSameDay, parseISO } from 'date-fns';
 
-// --- MOCKS FOR MISSING DEPENDENCIES ---
 
 const api = {
   get: async (url) => {
@@ -139,7 +138,7 @@ const Analytics = () => {
             <p className="text-2xl font-bold text-white">${totalSpent.toFixed(2)}</p>
           </div>
           <div className="p-3 bg-purple-500/30 rounded-full text-white">
-            <DollarSign size={24} />
+            <PhilippinePeso size={24} />
           </div>
         </div>
 
